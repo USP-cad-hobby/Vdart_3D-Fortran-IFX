@@ -13,7 +13,7 @@ module vdart_state_mod
   public :: allocate_mesh, deallocate_mesh
   public :: NB, NOL, KMNET, NPSI, IR, IRUN, KMAKS
   public :: RO, ANY
-  public :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, UINF, BOOLPRINT
+  public :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, UINF, BOOLPRINT
   public :: H0, A, B, BSAF
   public :: GAMME, SWB, UREL, ALFA, ALFAF, CL, CD
   public :: H1, H2, V1, V2, VIND, BLSNIT
@@ -25,7 +25,7 @@ module vdart_state_mod
   integer :: ITALX, ITALY, ITALZ
   
   real(dp) :: RO, ANY
-  real(dp) :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, UINF
+  real(dp) :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, UINF
   real(dp) :: H0, A, B, BSAF
   logical :: BOOLPRINT
 
@@ -89,6 +89,7 @@ contains
     RC = 0.0_dp
     HSTAR = 0.0_dp
     FI0DOT = 0.0_dp
+    FI0_AMP = 0.0_dp
     UINF = 0.0_dp
     H0 = 0.0_dp
     A = 0.0_dp

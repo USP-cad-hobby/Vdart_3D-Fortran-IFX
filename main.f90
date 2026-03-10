@@ -18,7 +18,7 @@ program vdart_demo
   real(dp) :: omega_test, uinf_test, c_test, dt_test, dteta_test, rc_test
   real(dp) :: ro_test, any_test, eps_test, ares_test
   real(dp) :: rpm_test, pitchoff, pitchoff_test
-  integer :: i, neto, nor_test, ir_temp
+  integer :: i, neto, ir_temp
 
   write(*,*) ''
   write(*,*) '========================================='
@@ -43,28 +43,24 @@ program vdart_demo
 
   ro_test = 1.20_dp
   any_test = 15.0e-6_dp
-  eps_test = 10.0e-2_dp            ! From D3_DATA.SEQ (00006800)
-  ares_test = 33.33e-2_dp          ! From D3_DATA.SEQ (00006800)
+  eps_test = 1.0e-3_dp             ! Tighter tolerance
+  !ares_test = 33.33e-2_dp
+  ares_test = 0.7_dp  ! Was 0.333
   rc_test = 7.50e-2_dp
 
-  ! Legacy configuration from D3_DATA.SEQ (00006900)
-  nor_test = 20                    ! Number of revolutions (NOR)
-  neto = 5                         ! Wake revolutions (NETO)
-  nb_test = 3                      ! Number of blades (NB)
-  nol_test = 24                    ! Blade sections (NOL)
-
-  ! Compute parameters using Vdart_3d_R5.FOR formulas:
-  ! IR = 2π / DTETA (steps per revolution)
-  ir_temp = int(2.0_dp * pi / dteta_test)  ! = 72
-
-  ! KMNET = NETO * IR (changed from NETO*IR+1 in R5 version 080326)
-  kmnet_test = neto * ir_temp              ! = 5*72 = 360
-
-  ! KRUN = NOR * IR (start checking convergence after NOR revolutions)
-  krun_test = nor_test * ir_temp           ! = 20*72 = 1440
-
-  ! KMAKS = 3 * KRUN (maximum iterations)
-  kmaks_test = 3 * krun_test               ! = 3*1440 = 4320
+  ! Legacy configuration
+  neto = 5                         ! Wake revolutions
+  nb_test = 3
+  nol_test = 24
+  
+  ! Compute KMNET using legacy formula: NETO * IR + 1
+  ! IR = 2π / DTETA 
+  ir_temp = int(2.0_dp * pi / dteta_test)
+  kmnet_test = neto * ir_temp + 1  ! = 5*72+1 = 361
+  
+  krun_test = 72                   ! Start checking after 1 revolution
+  !kmaks_test = 2160                ! Run 30 revolutions
+  kmaks_test = 360
   dt_test = dteta_test / omega_test
 
   write(*,*) 'Test Case: Legacy D3_DATA.SEQ Configuration'
@@ -75,7 +71,6 @@ program vdart_demo
   write(*,'(A,I3)')     '  Blade sections (NOL):   ', nol_test
   write(*,'(A,I4)')     '  Wake mesh (KMNET):      ', kmnet_test
   write(*,'(A,I4)')     '  Steps per revolution:   ', ir_temp
-  write(*,'(A,I4)')     '  Revolutions (NOR):      ', nor_test
   write(*,'(A,F6.2,A)') '  Chord length:           ', c_test, ' m'
   write(*,'(A,F6.2,A)') '  Wind speed (UINF):      ', uinf_test, ' m/s'
   write(*,'(A,F6.2,A)') '  Rotation (RPM):         ', rpm_test, ' RPM'
@@ -84,8 +79,7 @@ program vdart_demo
   write(*,'(A,F6.2,A)') '  Azimuthal step:         ', dteta_test*180.0_dp/pi, ' deg'
   write(*,'(A,F6.4)')   '  Under-relaxation:       ', ares_test
   write(*,'(A,E10.3)')  '  Convergence tolerance:  ', eps_test
-  write(*,'(A,I5)')     '  KRUN (check after):     ', krun_test
-  write(*,'(A,I5)')     '  Max iterations (KMAKS): ', kmaks_test
+  write(*,'(A,I5)')     '  Max iterations:         ', kmaks_test
   write(*,*) ''
 
   write(*,*) 'Allocating state arrays...'
@@ -108,6 +102,7 @@ program vdart_demo
   DT = dt_test
   HSTAR = hstar_test
   FI0DOT = 0.0_dp
+  FI0_AMP = 0.0_dp  ! Pitch amplitude (radians). Set to non-zero for actuation
   RO = ro_test
   ANY = any_test
   EPS1 = eps_test

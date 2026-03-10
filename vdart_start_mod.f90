@@ -59,11 +59,19 @@ contains
         st = sin(t1)
 
         do j = 1, nol1
-          fir = t1 + FI0(j)  ! note: + instead of - (backward time)
+          ! FI0 and BETA are panel properties (size NOL)
+          ! For tip node (j=nol1), use last panel's values
+          if (j <= NOL) then
+            fir = t1 + FI0(j)
+            cb = cos(BETA(j))
+            sb = sin(BETA(j))
+          else
+            fir = t1 + FI0(NOL)
+            cb = cos(BETA(NOL))
+            sb = sin(BETA(NOL))
+          end if
           sf = sin(fir)
           cf = cos(fir)
-          cb = cos(BETA(j))
-          sb = sin(BETA(j))
 
           ! Set vortex positions backward in time (convected by freestream)
           H1(i, j, k, 1) = VIND(j, 1) * real(k - 1, dp) * DT &

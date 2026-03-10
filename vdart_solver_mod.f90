@@ -58,6 +58,14 @@ contains
       call nethas()
 
       IRUN = IRUN + 1
+
+      ! Update time-varying pitch actuation: FI0(t,j) = FI0_AMP * sin(FI0DOT * t)
+      ! (Done AFTER IRUN increment to match legacy timing - pitch synchronized with new timestep)
+      if (abs(FI0DOT) > 1.0e-10_dp .and. abs(FI0_AMP) > 1.0e-10_dp) then
+        do j = 1, NOL
+          FI0(j) = FI0_AMP * sin(FI0DOT * DT * real(IRUN, dp))
+        end do
+      end if
       if (mod(IRUN, 10) == 0 .or. IRUN <= 5) then
         write(*,'(A,I5,A,F8.2,A)') '  Step ', IRUN, '  Azimuth: ', IRUN*DTETA*180.0_dp/pi, ' deg'
       end if
