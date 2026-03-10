@@ -48,6 +48,34 @@ Generated\ Files/
 # NUnit
 *.VisualState.xml
 TestResult.xml
+
+# Fortran compiled files
+*.mod
+*.smod
+*.o
+*.obj
+*.exe
+*.lib
+*.dll
+*.pdb
+*.ilk
+*.exp
+
+# Fortran output/temporary files
+*.dat
+*.DAT
+*.backup
+RESULT.DAT
+RES.DAT
+HPOS.DAT
+BIOTB.DAT
+BIOTL.DAT
+BIOTR.DAT
+CLCDOUT.DAT
+
+# Keep input data files
+!D3_DATA.SEQ
+!DeepWind-Blade-form.dat
 nunit-*.xml
 
 # Build Results of an ATL Project
