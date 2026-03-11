@@ -58,13 +58,13 @@ contains
     do i = 1, NB
       t1 = teta + CRANK(i)
       do j = 1, nol1
-        fir = t1 - FI0(j)
+        fir = t1 - FI0(i, min(j, NOL))
         st1 = sin(t1)
         ct1 = cos(t1)
         sf = sin(fir)
         cf = cos(fir)
-        sb = sin(BETA(j))
-        cb = cos(BETA(j))
+        sb = sin(BETA(min(j, NOL)))
+        cb = cos(BETA(min(j, NOL)))
 
         do l = 1, 3
           H1(i, j, 2, l) = V2(i, j, 1, l) * DT + H1(i, j, 1, l)

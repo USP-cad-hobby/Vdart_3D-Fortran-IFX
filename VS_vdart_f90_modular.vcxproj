@@ -147,7 +147,29 @@
     <Compile Include="main.f90" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="test_vortex.f90" />
+    <None Include="main.f90" />
+    <None Include="vdart_aero_mod.f90">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </None>
+    <None Include="vdart_biot_mod.f90" />
+    <None Include="vdart_blad_mod.f90" />
+    <None Include="vdart_bsa_mod.f90" />
+    <None Include="vdart_flyt_mod.f90" />
+    <None Include="vdart_forces_mod.f90" />
+    <None Include="vdart_io_mod.f90" />
+    <None Include="vdart_kinds_mod.f90" />
+    <None Include="vdart_nethas_mod.f90" />
+    <None Include="vdart_solver_mod.f90" />
+    <None Include="vdart_start_mod.f90" />
+    <None Include="vdart_state_mod.f90" />
+    <None Include="vdart_vortex_mod.f90" />
+    <None Include="vdart_wind_mod.f90" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="VS_vdart_f90_modular.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -136,12 +136,21 @@ contains
         BETA(j) = atan(tanb)
       end if
 
-      FI0(j) = 0.0_dp + offsetpitch
+      FI0(1, j) = 0.0_dp + offsetpitch
     end do
 
     write(*,'(A,F8.3,A)') '  Total span calculated: ', sum(DSPAN), ' m'
 
-    ! Copy to other blades
+    ! Copy to other blades (initial pitch same for all)
+    if (NB > 1) then
+      do i = 2, NB
+        do j = 1, NOL
+          FI0(i, j) = FI0(1, j)
+        end do
+      end do
+    end if
+
+    ! Copy blade geometry to other blades
     if (NB > 1) then
       do i = 2, NB
         do j = 1, nol1

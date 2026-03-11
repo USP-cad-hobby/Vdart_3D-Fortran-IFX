@@ -13,8 +13,9 @@ module vdart_state_mod
   public :: allocate_mesh, deallocate_mesh
   public :: NB, NOL, KMNET, NPSI, IR, IRUN, KMAKS
   public :: RO, ANY
-  public :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, UINF, BOOLPRINT
+  public :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, FI0_BASE, UINF, BOOLPRINT
   public :: H0, A, B, BSAF
+  public :: PITCH_MODE
   public :: GAMME, SWB, UREL, ALFA, ALFAF, CL, CD
   public :: H1, H2, V1, V2, VIND, BLSNIT
   public :: DSPAN, BETA, FI0, CRANK, RS
@@ -23,9 +24,10 @@ module vdart_state_mod
 
   integer :: NB, NOL, KMNET, NPSI, IR, IRUN, KMAKS
   integer :: ITALX, ITALY, ITALZ
-  
+  integer :: PITCH_MODE
+
   real(dp) :: RO, ANY
-  real(dp) :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, UINF
+  real(dp) :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, FI0_BASE, UINF
   real(dp) :: H0, A, B, BSAF
   logical :: BOOLPRINT
 
@@ -44,7 +46,7 @@ module vdart_state_mod
   real(dp), allocatable :: BLSNIT(:,:,:)
   real(dp), allocatable :: DSPAN(:)
   real(dp), allocatable :: BETA(:)
-  real(dp), allocatable :: FI0(:)
+  real(dp), allocatable :: FI0(:,:)
   real(dp), allocatable :: CRANK(:)
   real(dp), allocatable :: RS(:,:)
   real(dp), allocatable :: FR(:,:,:)
@@ -90,7 +92,9 @@ contains
     HSTAR = 0.0_dp
     FI0DOT = 0.0_dp
     FI0_AMP = 0.0_dp
+    FI0_BASE = 0.0_dp
     UINF = 0.0_dp
+    PITCH_MODE = 1
     H0 = 0.0_dp
     A = 0.0_dp
     B = 0.0_dp
@@ -204,7 +208,7 @@ contains
     end if
     BETA = 0.0_dp
 
-    allocate( FI0(NOL), stat=ios )
+    allocate( FI0(NB, NOL), stat=ios )
     if (ios /= 0) then
       ierr = 17
       return

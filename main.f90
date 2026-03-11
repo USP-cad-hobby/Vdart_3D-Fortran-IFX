@@ -101,8 +101,23 @@ program vdart_demo
   DTETA = dteta_test
   DT = dt_test
   HSTAR = hstar_test
-  FI0DOT = 0.0_dp
-  FI0_AMP = 0.0_dp  ! Pitch amplitude (radians). Set to non-zero for actuation
+
+  ! ============ PITCH CONTROL MODE SELECTION ============
+  ! PITCH_MODE = 1: Harmonic (simple testing)
+  !   - All blades pitch identically: FI0(t) = FI0_BASE + FI0_AMP * sin(FI0DOT*t)
+  !   - Use for: Frequency response, flutter analysis, simple actuation
+  !
+  ! PITCH_MODE = 2: Cyclic (torque smoothing / performance enhancement)
+  !   - Blade-specific pitch based on azimuth position
+  !   - Downwind (90°<θ<270°): FI0 = FI0_BASE + FI0_AMP (increase AoA)
+  !   - Upwind (−90°<θ<90°):    FI0 = FI0_BASE (baseline)
+  !   - Use for: Compensating velocity deficit, reducing torque ripple
+  ! ======================================================
+  PITCH_MODE = 1  
+  FI0_BASE = 0.0_dp    ! Baseline pitch offset (radians)
+  FI0DOT = 0.0_dp      ! Pitch frequency for mode 1 (rad/s)
+  FI0_AMP = 0.0_dp     ! Pitch amplitude (radians) - set to 5*pi/180 for testing
+
   RO = ro_test
   ANY = any_test
   EPS1 = eps_test

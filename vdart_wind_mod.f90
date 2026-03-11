@@ -44,7 +44,7 @@ contains
       st1 = sin(teta1)
       ct1 = cos(teta1)
       do j = 1, NOL
-        fi = teta1 - FI0(j)
+        fi = teta1 - FI0(i, j)
         rz = 0.5_dp * (BLSNIT(1, j, 2) + BLSNIT(1, j+1, 2))
         cf = cos(fi)
         sf = sin(fi)
@@ -74,7 +74,7 @@ contains
       st1 = sin(teta1)
       ct1 = cos(teta1)
       do j = 1, NOL
-        fi = teta1 - FI0(j)
+        fi = teta1 - FI0(i, j)
         rz = 0.5_dp * (BLSNIT(1, j, 2) + BLSNIT(1, j+1, 2))
         cf = cos(fi)
         sf = sin(fi)

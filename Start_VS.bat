@@ -1,0 +1,1 @@
+ifx -o VS_vdart_f90_modular.exe *.f90

@@ -62,11 +62,11 @@ contains
           ! FI0 and BETA are panel properties (size NOL)
           ! For tip node (j=nol1), use last panel's values
           if (j <= NOL) then
-            fir = t1 + FI0(j)
+            fir = t1 + FI0(i, j)
             cb = cos(BETA(j))
             sb = sin(BETA(j))
           else
-            fir = t1 + FI0(NOL)
+            fir = t1 + FI0(i, NOL)
             cb = cos(BETA(NOL))
             sb = sin(BETA(NOL))
           end if

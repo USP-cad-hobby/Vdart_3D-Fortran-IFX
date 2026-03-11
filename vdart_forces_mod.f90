@@ -47,8 +47,8 @@ contains
         end if
         cosb = cos(BETA(j))
         sinb = sin(BETA(j))
-        sinfi0 = sin(FI0(j))
-        cosfi0 = cos(FI0(j))
+        sinfi0 = sin(FI0(i, j))
+        cosfi0 = cos(FI0(i, j))
 
         FR(i, j, IRUN) =  cosfi0 * cosb * fn + fc * sinfi0
         FT(i, j, IRUN) = -sinfi0 * fn * cosb + cosfi0 * fc

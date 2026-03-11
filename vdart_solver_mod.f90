@@ -23,6 +23,7 @@ contains
     integer, intent(in) :: krun_in, kmaks_in
     real(dp), intent(in) :: eps_conv, ares
     integer, intent(out) :: ierr
+	real(dp)			 :: teta, theta_blade
 
     logical :: converged
     real(dp) :: gpert, gpern, gg
@@ -59,12 +60,45 @@ contains
 
       IRUN = IRUN + 1
 
-      ! Update time-varying pitch actuation: FI0(t,j) = FI0_AMP * sin(FI0DOT * t)
+      ! Update time-varying pitch actuation (dual-mode system)
       ! (Done AFTER IRUN increment to match legacy timing - pitch synchronized with new timestep)
-      if (abs(FI0DOT) > 1.0e-10_dp .and. abs(FI0_AMP) > 1.0e-10_dp) then
-        do j = 1, NOL
-          FI0(j) = FI0_AMP * sin(FI0DOT * DT * real(IRUN, dp))
-        end do
+      if (abs(FI0_AMP) > 1.0e-10_dp) then
+        select case (PITCH_MODE)
+
+        case (1)  ! Harmonic mode: FI0(t) = FI0_BASE + FI0_AMP * sin(FI0DOT * t)
+                  ! All blades have identical pitch (simple harmonic testing)
+          do i = 1, NB
+            do j = 1, NOL
+              FI0(i, j) = FI0_BASE + FI0_AMP * sin(FI0DOT * DT * real(IRUN, dp))
+            end do
+          end do
+
+        case (2)  ! Cyclic mode: FI0(θ) = FI0_BASE + FI0_AMP (downwind compensation)
+                  ! Blade-specific pitch based on azimuth position
+          do i = 1, NB
+            teta = real(IRUN, dp) * DTETA
+            theta_blade = teta + CRANK(i)
+
+            ! Downwind detection (sin(θ) < 0 means 90° < θ < 270°)
+            if (sin(theta_blade) < 0.0_dp) then
+              ! Downwind: increase pitch to compensate for velocity deficit
+              do j = 1, NOL
+                FI0(i, j) = FI0_BASE + FI0_AMP
+              end do
+            else
+              ! Upwind: baseline pitch
+              do j = 1, NOL
+                FI0(i, j) = FI0_BASE
+              end do
+            end if
+          end do
+
+        case default
+          write(*,*) 'ERROR: Invalid PITCH_MODE. Must be 1 or 2.'
+          ierr = 99
+          return
+
+        end select
       end if
       if (mod(IRUN, 10) == 0 .or. IRUN <= 5) then
         write(*,'(A,I5,A,F8.2,A)') '  Step ', IRUN, '  Azimuth: ', IRUN*DTETA*180.0_dp/pi, ' deg'
