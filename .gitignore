@@ -1,0 +1,36 @@
+# Intel Fortran build artifacts
+*.obj
+*.mod
+*.pdb
+*.ilk
+*.exe
+*.dll
+*.lib
+*.exp
+
+# Visual Studio directories
+x64/
+Debug/
+Release/
+.vs/
+ipch/
+
+# Build logs
+*.log
+*.htm
+BuildLog.htm
+
+# Intel Fortran specific
+*.dyn
+*.dpi
+*.lock
+*.spi
+*.stb
+
+# Backup files
+*~
+*.bak
+
+# Solution user options
+*.suo
+*.user
