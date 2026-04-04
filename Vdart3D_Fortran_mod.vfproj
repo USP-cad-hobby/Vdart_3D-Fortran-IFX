@@ -56,8 +56,7 @@
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 			<File RelativePath=".\main.f90">
 			</File>
-			<File RelativePath=".\vdart_aero_mod.f90">
-			</File>
+			<File RelativePath=".\vdart_aero_mod.f90"/>
 			<File RelativePath=".\vdart_biot_mod.f90"/>
 			<File RelativePath=".\vdart_blad_mod.f90"/>
 			<File RelativePath=".\vdart_bsa_mod.f90"/>
@@ -72,6 +71,8 @@
 			<File RelativePath=".\vdart_vortex_mod.f90"/>
 			<File RelativePath=".\vdart_wind_mod.f90"/>
 		</Filter>
+		<File RelativePath=".\.gitignore"/>
+		<File RelativePath=".\README.md"/>
 	</Files>
 	<Globals/>
 </VisualStudioProject>
