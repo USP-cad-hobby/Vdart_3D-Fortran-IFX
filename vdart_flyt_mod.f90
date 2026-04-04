@@ -96,6 +96,7 @@ contains
     km = KMNET - 2
 
     do i = 1, NB
+      ! Renumber H1, V1 arrays (dimension is nol1 = NOL+1)
       do j = 1, nol1
         do n = 1, km
           k = KMNET - n
@@ -104,6 +105,13 @@ contains
             H1(i, j, k1, l) = H2(i, j, k, l)
             V1(i, j, k1, l) = V2(i, j, k, l)
           end do
+        end do
+      end do
+      ! Renumber GAMME array (dimension is NOL, not nol1)
+      do j = 1, NOL
+        do n = 1, km
+          k = KMNET - n
+          k1 = k + 1
           GAMME(i, j, k1) = GAMME(i, j, k)
         end do
         GAMME(i, j, 2) = GAMME(i, j, 1)

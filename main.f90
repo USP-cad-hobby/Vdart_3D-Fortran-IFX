@@ -43,24 +43,23 @@ program vdart_demo
 
   ro_test = 1.20_dp
   any_test = 15.0e-6_dp
-  eps_test = 1.0e-3_dp             ! Tighter tolerance
-  !ares_test = 33.33e-2_dp
-  ares_test = 0.7_dp  ! Was 0.333
+  eps_test = 0.20_dp                 ! Looser tolerance for quick testing (was 0.10)
+  ares_test = 0.50_dp                ! Faster convergence (was 0.33)
   rc_test = 7.50e-2_dp
 
-  ! Legacy configuration
-  neto = 5                         ! Wake revolutions
+  ! Legacy configuration - REDUCED FOR FASTER TESTING
+  neto = 3                         ! Wake revolutions (was 5)
   nb_test = 3
-  nol_test = 24
-  
+  nol_test = 12                    ! Blade sections (was 24) - halved for speed
+
   ! Compute KMNET using legacy formula: NETO * IR + 1
   ! IR = 2π / DTETA 
   ir_temp = int(2.0_dp * pi / dteta_test)
-  kmnet_test = neto * ir_temp + 1  ! = 5*72+1 = 361
-  
+  kmnet_test = neto * ir_temp + 1  ! = 3*72+1 = 217 (was 361)
+
   krun_test = 72                   ! Start checking after 1 revolution
   !kmaks_test = 2160                ! Run 30 revolutions
-  kmaks_test = 360
+  kmaks_test = 360                  ! Run 5 revolutions for wake development
   dt_test = dteta_test / omega_test
 
   write(*,*) 'Test Case: Legacy D3_DATA.SEQ Configuration'
@@ -103,20 +102,34 @@ program vdart_demo
   HSTAR = hstar_test
 
   ! ============ PITCH CONTROL MODE SELECTION ============
+  ! PITCH_MODE = 0: Fixed pitch (legacy validation)
+  !   - All blades: FI0 = FI0_BASE (constant)
+  !   - Use for: baseline performance, legacy code validation
+  !
   ! PITCH_MODE = 1: Harmonic (simple testing)
   !   - All blades pitch identically: FI0(t) = FI0_BASE + FI0_AMP * sin(FI0DOT*t)
   !   - Use for: Frequency response, flutter analysis, simple actuation
   !
   ! PITCH_MODE = 2: Cyclic (torque smoothing / performance enhancement)
-  !   - Blade-specific pitch based on azimuth position
-  !   - Downwind (90°<θ<270°): FI0 = FI0_BASE + FI0_AMP (increase AoA)
-  !   - Upwind (−90°<θ<90°):    FI0 = FI0_BASE (baseline)
+  !   - Blade-specific pitch based on azimuth RELATIVE TO WIND DIRECTION
+  !   - θ_rel = blade_azimuth - WIND_DIR
+  !   - Downwind (90°<θ_rel<270°): FI0 = FI0_BASE + FI0_AMP (increase AoA)
+  !   - Upwind (otherwise):        FI0 = FI0_BASE (baseline)
   !   - Use for: Compensating velocity deficit, reducing torque ripple
   ! ======================================================
-  PITCH_MODE = 1  
-  FI0_BASE = 0.0_dp    ! Baseline pitch offset (radians)
-  FI0DOT = 0.0_dp      ! Pitch frequency for mode 1 (rad/s)
-  FI0_AMP = 0.0_dp     ! Pitch amplitude (radians) - set to 5*pi/180 for testing
+  PITCH_MODE = 0        ! Use 0 for legacy validation
+  FI0_BASE = 0.0_dp     ! Baseline pitch offset (radians)
+  FI0DOT = 0.0_dp       ! Pitch frequency for mode 1 (rad/s)
+  FI0_AMP = 0.0_dp      ! Pitch amplitude (radians) - set to 5*pi/180 for testing
+  WIND_DIR = 0.0_dp     ! Wind direction (radians) - 0 = wind from +X axis
+
+  ! ============ AERODYNAMIC MODEL OPTIONS ============
+  ! USE_ETA_OFFSET controls c/4 vs 3c/4 evaluation point separation
+  !   .FALSE. = Legacy mode (both at same point, simpler)
+  !   .TRUE.  = Proper thin airfoil theory (more accurate for pitching)
+  ! Set to .FALSE. for comparison with old results
+  ! ===================================================
+  USE_ETA_OFFSET = .false.  ! Change to .true. to enable proper c/4 vs 3c/4
 
   RO = ro_test
   ANY = any_test

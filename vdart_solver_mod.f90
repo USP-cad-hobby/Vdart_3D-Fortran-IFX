@@ -119,12 +119,13 @@ contains
         ! --------------------------------------------------------------------
         ! MODE 2: CYCLIC PITCH (Azimuth-Dependent, Blade-Specific)
         ! --------------------------------------------------------------------
-        ! Each blade's pitch depends on its current azimuth position:
-        !   - Downwind (90° < θ_blade < 270°): FI0 = FI0_BASE + FI0_AMP
-        !   - Upwind   (otherwise):            FI0 = FI0_BASE
+        ! Each blade's pitch depends on its azimuth position RELATIVE TO WIND:
+        !   - θ_rel = blade azimuth - WIND_DIR (blade position vs wind direction)
+        !   - Downwind (90° < θ_rel < 270°): FI0 = FI0_BASE + FI0_AMP
+        !   - Upwind   (otherwise):          FI0 = FI0_BASE
         !
-        ! Downwind detection uses sin(θ_blade) < 0, which is true when
-        ! the blade is in the rear half of the rotation (wake region).
+        ! Downwind detection uses sin(θ_rel) < 0, which is true when
+        ! the blade is in the rear half relative to the wind (wake region).
         !
         ! Use cases:
         !   - Torque ripple reduction
@@ -134,12 +135,13 @@ contains
         ! Parameters:
         !   FI0_BASE = baseline pitch (used upwind) [rad]
         !   FI0_AMP  = additional pitch increment (added downwind) [rad]
+        !   WIND_DIR = wind direction angle [rad] (0 = +X axis)
         ! --------------------------------------------------------------------
+        teta = real(IRUN, dp) * DTETA
         do i = 1, NB
-          teta = real(IRUN, dp) * DTETA
-          theta_blade = teta + CRANK(i)
+          theta_blade = teta + CRANK(i) - WIND_DIR  ! Relative to wind direction
 
-          ! Downwind detection: sin(θ) < 0 means 90° < θ < 270°
+          ! Downwind detection: sin(θ_rel) < 0 means 90° < θ_rel < 270°
           if (sin(theta_blade) < 0.0_dp) then
             ! Downwind pass: increase pitch to compensate for velocity deficit
             do j = 1, NOL
@@ -186,7 +188,11 @@ contains
 
         if (gpern > 0.0_dp) then
           gg = gpert / gpern
-          if (gg < EPS1) then
+          ! Report convergence status but DON'T stop early - run full revolutions
+          if (mod(IRUN, IR) == 0) then
+            write(*,'(A,I5,A,E12.4)') '  Rev ', IRUN/IR, ' periodic GG=', gg
+          end if
+          if (gg < EPS1 .and. IRUN >= kmaks_in) then
             write(*,'(A,I5,A,E12.4)') '  Converged at IRUN=', IRUN, '  GG=', gg
             converged = .true.
           end if
@@ -283,26 +289,76 @@ contains
   end subroutine output_summary
   
   subroutine diagnostic_dump()
-    integer :: i, j, iu
-    real(dp) :: radius, rx, ry
-    
+    integer :: i, j, l, iu
+    real(dp) :: radius, rx, ry, torque_step, azimuth_deg, ry_ref
+    real(dp) :: torque_blade(3)  ! Per-blade torque
+
+    ! =========================================================================
+    ! Output 1: Forces by blade section at final timestep
+    ! =========================================================================
     open(newunit=iu, file='debug_forces.dat', status='replace')
     write(iu,'(A)') '# Blade Section Radius(2D) FT(last_step) Torque_contrib'
-    
+
     do i = 1, NB
       do j = 1, NOL
         ! Corrected 2D radius: sqrt(X² + Y²) at element midpoint
         rx = (BLSNIT(i, j, 1) + BLSNIT(i, j+1, 1)) * 0.5_dp
         ry = (BLSNIT(i, j, 2) + BLSNIT(i, j+1, 2)) * 0.5_dp
         radius = sqrt(rx**2 + ry**2)
-        
+
         write(iu,'(2I5,4E16.6)') i, j, rx, ry, radius, FT(i, j, IRUN), FT(i,j,IRUN)*radius
       end do
     end do
-    
+
     close(iu)
     write(*,*) 'Debug output written to: debug_forces.dat'
-    
+
+    ! =========================================================================
+    ! Output 2: Torque vs Azimuth over last revolution
+    ! This is the KEY diagnostic for answering "does FT contribute to power?"
+    ! =========================================================================
+    open(newunit=iu, file='torque_vs_azimuth.dat', status='replace')
+    write(iu,'(A)') '# Azimuth[deg]  Total_Torque[Nm]  Blade1_Torque  Blade2_Torque  Blade3_Torque'
+
+    write(*,*) ''
+    write(*,*) '========================================='
+    write(*,*) '  Torque vs Azimuth (Last Revolution)'
+    write(*,*) '========================================='
+    write(*,'(A)') '   Azimuth    Total_Torque    Power_Sign'
+
+    do l = max(1, IRUN - IR + 1), IRUN
+      azimuth_deg = real(l, dp) * DTETA * 180.0_dp / pi
+
+      ! Compute total torque and per-blade torque at this timestep
+      torque_step = 0.0_dp
+      torque_blade = 0.0_dp
+      do i = 1, NB
+        do j = 1, NOL
+          ! Use blade 1 reference radius (legacy convention)
+          ry_ref = (BLSNIT(1, j, 2) + BLSNIT(1, j+1, 2)) * 0.5_dp
+          torque_step = torque_step + FT(i, j, l) * ry_ref
+          torque_blade(i) = torque_blade(i) + FT(i, j, l) * ry_ref
+        end do
+      end do
+
+      ! Per-blade torque for detailed analysis
+      write(iu,'(F8.1,4E16.6)') azimuth_deg, torque_step, &
+        torque_blade(1), torque_blade(2), torque_blade(3)
+
+      ! Console output every 30 degrees
+      if (mod(l - max(1, IRUN-IR+1), IR/12) == 0 .or. l == IRUN) then
+        if (torque_step > 0.0_dp) then
+          write(*,'(F8.1,A,E14.4,A)') azimuth_deg, ' deg  ', torque_step, '  (+) EXTRACTING'
+        else
+          write(*,'(F8.1,A,E14.4,A)') azimuth_deg, ' deg  ', torque_step, '  (-) motoring'
+        end if
+      end if
+    end do
+
+    close(iu)
+    write(*,*) '========================================='
+    write(*,*) 'Torque data written to: torque_vs_azimuth.dat'
+
   end subroutine diagnostic_dump
 
 end module vdart_solver_mod

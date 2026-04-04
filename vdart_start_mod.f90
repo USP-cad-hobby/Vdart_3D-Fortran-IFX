@@ -61,8 +61,9 @@ contains
         do j = 1, nol1
           ! FI0 and BETA are panel properties (size NOL)
           ! For tip node (j=nol1), use last panel's values
+          ! NOTE: Legacy uses FIR=T1+FI0(J) in START (backward time) vs FIR=T1-FI0(J) in FLYT (forward)
           if (j <= NOL) then
-            fir = t1 + FI0(i, j)
+            fir = t1 + FI0(i, j)   ! REVERTED: Legacy START uses + (comment says "'-' became '+'")
             cb = cos(BETA(j))
             sb = sin(BETA(j))
           else

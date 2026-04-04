@@ -15,7 +15,7 @@ module vdart_state_mod
   public :: RO, ANY
   public :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, FI0_BASE, UINF, BOOLPRINT
   public :: H0, A, B, BSAF
-  public :: PITCH_MODE
+  public :: PITCH_MODE, WIND_DIR, USE_ETA_OFFSET
   public :: GAMME, SWB, UREL, ALFA, ALFAF, CL, CD
   public :: H1, H2, V1, V2, VIND, BLSNIT
   public :: DSPAN, BETA, FI0, CRANK, RS
@@ -36,17 +36,32 @@ module vdart_state_mod
   !       - FI0(i,j) = FI0_BASE + FI0_AMP * sin(FI0DOT * t)
   !       - Use for: frequency response, flutter analysis, simple actuation
   !   2 = Cyclic pitch (azimuth-dependent, blade-specific)
-  !       - Downwind (90° < θ < 270°): FI0 = FI0_BASE + FI0_AMP
-  !       - Upwind (otherwise):        FI0 = FI0_BASE
+  !       - Downwind (90° < θ_rel < 270°): FI0 = FI0_BASE + FI0_AMP
+  !       - Upwind (otherwise):            FI0 = FI0_BASE
+  !       - θ_rel = blade azimuth relative to WIND_DIR
   !       - Use for: torque smoothing, velocity deficit compensation
   !
   ! Related parameters:
   !   FI0_BASE  - Baseline pitch offset [radians]
   !   FI0_AMP   - Pitch amplitude for modes 1 and 2 [radians]
   !   FI0DOT    - Pitch oscillation frequency for mode 1 [rad/s]
+  !   WIND_DIR  - Wind direction angle [radians] (0 = +X axis, default)
   !   FI0(i,j)  - Actual pitch per blade i, section j [radians] (set by solver)
   ! ============================================================================
   integer :: PITCH_MODE
+  real(dp) :: WIND_DIR
+
+  ! ============================================================================
+  ! AERODYNAMIC MODEL OPTIONS
+  ! ============================================================================
+  ! USE_ETA_OFFSET: Controls whether c/4 and 3c/4 evaluation points differ
+  !   .TRUE.  = Use proper thin airfoil theory (c/4 for forces, 3c/4 for AoA)
+  !   .FALSE. = Legacy mode (both evaluated at same point, ETA=0)
+  !
+  ! When .FALSE. (legacy): Simpler, matches original VDaRT behavior
+  ! When .TRUE. (proper):  More accurate for pitching blades (FI0DOT ≠ 0)
+  ! ============================================================================
+  logical :: USE_ETA_OFFSET = .false.   ! Default: legacy behavior for safety
 
   real(dp) :: RO, ANY
   real(dp) :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, FI0_BASE, UINF
@@ -117,6 +132,7 @@ contains
     FI0_BASE = 0.0_dp
     UINF = 0.0_dp
     PITCH_MODE = 0      ! Default: fixed pitch (no control)
+    WIND_DIR = 0.0_dp   ! Default: wind from +X direction
     H0 = 0.0_dp
     A = 0.0_dp
     B = 0.0_dp

@@ -64,7 +64,14 @@ contains
   subroutine clcdideal(alfad, cll, cdd)
     real(dp), intent(in) :: alfad
     real(dp), intent(out) :: cll, cdd
-    real(dp) :: alfab, sina, sin2a
+    real(dp) :: alfab, sina, sin2a, sign_a
+
+    ! Sign correction for symmetric airfoil (legacy: A=±1)
+    if (alfad > 0.0_dp) then
+      sign_a = 1.0_dp
+    else
+      sign_a = -1.0_dp
+    end if
 
     alfab = abs(alfad)
     sina = sin(alfab*pi/180.0_dp)
@@ -82,6 +89,10 @@ contains
       cll = -2.0_dp*pi*sina
       cdd = 0.0060_dp
     end if
+
+    ! Apply sign correction: CL has same sign as ALFA for symmetric airfoil
+    cll = sign_a * cll
+
   end subroutine clcdideal
 
 end module vdart_aero_mod
