@@ -34,3 +34,7 @@ BuildLog.htm
 # Solution user options
 *.suo
 *.user
+
+# Output data files
+*.dat
+*.DAT

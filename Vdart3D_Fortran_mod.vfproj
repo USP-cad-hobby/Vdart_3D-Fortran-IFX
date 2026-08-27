@@ -54,7 +54,8 @@
 		<Filter Name="Header Files" Filter="fi;fd;h;inc"/>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-			<File RelativePath=".\main.f90"/>
+			<File RelativePath=".\main.f90">
+			</File>
 			<File RelativePath=".\vdart_aero_mod.f90"/>
 			<File RelativePath=".\vdart_biot_mod.f90"/>
 			<File RelativePath=".\vdart_blad_mod.f90"/>
@@ -74,7 +75,11 @@
 		<File RelativePath=".\docs\blade_position_verification.md"/>
 		<File RelativePath=".\docs\coordinate_transformations.md"/>
 		<File RelativePath=".\.github\copilot-instructions.md"/>
+		<File RelativePath=".\docs\FIDOT_BUG_SUMMARY.md"/>
+		<File RelativePath=".\docs\PITCH_CONTROL_VALIDATION.md"/>
 		<File RelativePath=".\README.md"/>
+		<File RelativePath=".\docs\SESSION_NOTES.md"/>
+		<File RelativePath=".\docs\TEST_RESULTS_SUMMARY.md"/>
 	</Files>
 	<Globals/>
 </VisualStudioProject>
