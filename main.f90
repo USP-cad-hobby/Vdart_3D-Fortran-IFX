@@ -106,7 +106,7 @@ program vdart_demo
   !   - All blades: FI0 = FI0_BASE (constant)
   !   - Use for: baseline performance, legacy code validation
   !
-  ! PITCH_MODE = 1: Harmonic (simple testing)
+  ! PITCH_MODE = 1: Harmonic (simple testing) *** ACTIVE ***
   !   - All blades pitch identically: FI0(t) = FI0_BASE + FI0_AMP * sin(FI0DOT*t)
   !   - Use for: Frequency response, flutter analysis, simple actuation
   !
@@ -117,11 +117,26 @@ program vdart_demo
   !   - Upwind (otherwise):        FI0 = FI0_BASE (baseline)
   !   - Use for: Compensating velocity deficit, reducing torque ripple
   ! ======================================================
-  PITCH_MODE = 0        ! Use 0 for legacy validation
-  FI0_BASE = 0.0_dp     ! Baseline pitch offset (radians)
-  FI0DOT = 0.0_dp       ! Pitch frequency for mode 1 (rad/s)
-  FI0_AMP = 0.0_dp      ! Pitch amplitude (radians) - set to 5*pi/180 for testing
-  WIND_DIR = 0.0_dp     ! Wind direction (radians) - 0 = wind from +X axis
+  ! *** STEP 1 TEST: Harmonic Pitch at 1P frequency ***
+  PITCH_MODE = 1                     ! Harmonic mode
+  FI0_BASE = 0.0_dp                  ! No mean pitch offset
+  FI0DOT = omega_test                ! Pitch frequency = rotor frequency (1P)
+  FI0_AMP = 5.0_dp * pi / 180.0_dp   ! ±5° pitch amplitude
+  WIND_DIR = 0.0_dp                  ! Wind direction (radians) - 0 = wind from +X axis
+
+  write(*,*) ''
+  write(*,*) '*** PITCH CONTROL TEST: HARMONIC MODE ***'
+  write(*,'(A,I2)')     '  Pitch mode:             ', 1
+  write(*,'(A,F6.2,A)') '  Pitch amplitude:        ', FI0_AMP*180.0_dp/pi, ' deg'
+  write(*,'(A,F6.3,A)') '  Pitch frequency:        ', FI0DOT, ' rad/s (1P)'
+  write(*,*) ''
+  write(*,*) '*** STEP 2: PISTOLESI CORRECTIONS ENABLED ***'
+  write(*,*) '  USE_ETA_OFFSET = .TRUE.'
+  write(*,*) '  - Forces evaluated at c/4 (bound vortex)'
+  write(*,*) '  - AoA evaluated at 3c/4 (control point)'
+  write(*,*) '  - Accounts for unsteady phase lag'
+  write(*,*) '******************************************'
+  write(*,*) ''
 
   ! ============ AERODYNAMIC MODEL OPTIONS ============
   ! USE_ETA_OFFSET controls c/4 vs 3c/4 evaluation point separation
@@ -129,7 +144,8 @@ program vdart_demo
   !   .TRUE.  = Proper thin airfoil theory (more accurate for pitching)
   ! Set to .FALSE. for comparison with old results
   ! ===================================================
-  USE_ETA_OFFSET = .false.  ! Change to .true. to enable proper c/4 vs 3c/4
+  ! *** STEP 2 TEST: Enable Pistolesi c/4 vs 3c/4 corrections ***
+  USE_ETA_OFFSET = .true.  ! Proper thin airfoil theory with pitching
 
   RO = ro_test
   ANY = any_test

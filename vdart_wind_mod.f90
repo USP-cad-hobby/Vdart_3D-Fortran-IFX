@@ -19,7 +19,7 @@ contains
 
     integer :: i, j, l
     real(dp) :: teta1, st1, ct1, fi, rz, cf, sf, cb, sb
-    real(dp) :: xi, eta, zeta, fidot, t1, t2
+    real(dp) :: xi, eta, zeta, fidot, t1, t2, time_now
     real(dp), allocatable :: uvek(:,:,:), uloc(:,:,:)
 
     if (.not. allocated(SWB) .or. .not. allocated(UREL) .or. .not. allocated(ALFA) .or. .not. allocated(BLSNIT)) then
@@ -33,7 +33,30 @@ contains
 
     xi = 0.0_dp
     zeta = 0.0_dp
-    fidot = OMEGA - FI0DOT
+
+    ! =========================================================================
+    ! PITCH RATE CALCULATION: fidot = d(fi)/dt = OMEGA - dFI0/dt
+    ! =========================================================================
+    ! For pitching blades, the pitch rate fidot affects the velocity at
+    ! evaluation points due to the rotational motion about the pitch axis.
+    ! The correct fidot depends on the pitch control mode:
+    !
+    ! PITCH_MODE = 0 (Fixed):    dFI0/dt = 0           => fidot = OMEGA
+    ! PITCH_MODE = 1 (Harmonic): dFI0/dt = FI0_AMP * FI0DOT * cos(FI0DOT*t)
+    ! PITCH_MODE = 2 (Cyclic):   dFI0/dt = 0 (step function) => fidot = OMEGA
+    !
+    ! Note: time_now is computed from teta since teta = OMEGA * t in solver
+    ! =========================================================================
+    if (PITCH_MODE == 1) then
+      ! Harmonic pitch: compute instantaneous pitch rate
+      ! FI0(t) = FI0_BASE + FI0_AMP * sin(FI0DOT * t)
+      ! dFI0/dt = FI0_AMP * FI0DOT * cos(FI0DOT * t)
+      time_now = teta / OMEGA  ! Current simulation time
+      fidot = OMEGA - FI0_AMP * FI0DOT * cos(FI0DOT * time_now)
+    else
+      ! Fixed pitch (mode 0) or cyclic pitch (mode 2): no smooth pitch rate
+      fidot = OMEGA
+    end if
 
     ! =========================================================================
     ! First pass: compute UREL at c/4 (quarter-chord)
