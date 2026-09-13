@@ -17,6 +17,7 @@ module vdart_state_mod
   public :: H0, A, B, BSAF
   public :: PITCH_MODE, WIND_DIR, USE_ETA_OFFSET
   public :: GAMME, SWB, UREL, ALFA, ALFAF, CL, CD
+  public :: FI0_old, FIDOT
   public :: H1, H2, V1, V2, VIND, BLSNIT
   public :: DSPAN, BETA, FI0, CRANK, RS
   public :: FR, FT, FB
@@ -84,6 +85,8 @@ module vdart_state_mod
   real(dp), allocatable :: DSPAN(:)
   real(dp), allocatable :: BETA(:)
   real(dp), allocatable :: FI0(:,:)
+  real(dp), allocatable :: FI0_old(:,:)
+  real(dp), allocatable :: FIDOT(:,:)
   real(dp), allocatable :: CRANK(:)
   real(dp), allocatable :: RS(:,:)
   real(dp), allocatable :: FR(:,:,:)
@@ -253,16 +256,31 @@ contains
     end if
     FI0 = 0.0_dp
 
-    allocate( CRANK(NB), stat=ios )
+    ! Allocate pitch-history arrays for controller diagnostics (FI0_old, FIDOT)
+    allocate( FI0_old(NB, NOL), stat=ios )
     if (ios /= 0) then
       ierr = 18
+      return
+    end if
+    FI0_old = 0.0_dp
+
+    allocate( FIDOT(NB, NOL), stat=ios )
+    if (ios /= 0) then
+      ierr = 19
+      return
+    end if
+    FIDOT = 0.0_dp
+
+    allocate( CRANK(NB), stat=ios )
+    if (ios /= 0) then
+      ierr = 20
       return
     end if
     CRANK = 0.0_dp
 
     allocate( RS(300, 2), stat=ios )
     if (ios /= 0) then
-      ierr = 19
+      ierr = 21
       return
     end if
     RS = 0.0_dp
@@ -270,21 +288,19 @@ contains
     ! Force arrays: fixed size matching legacy (8000 timesteps)
     allocate( FR(NB, NOL, KMAKS_FORCE), stat=ios )
     if (ios /= 0) then
-      ierr = 20
+      ierr = 22
       return
     end if
     FR = 0.0_dp
-
     allocate( FT(NB, NOL, KMAKS_FORCE), stat=ios )
     if (ios /= 0) then
-      ierr = 21
+      ierr = 23
       return
     end if
     FT = 0.0_dp
-
     allocate( FB(NB, NOL, KMAKS_FORCE), stat=ios )
     if (ios /= 0) then
-      ierr = 22
+      ierr = 24
       return
     end if
     FB = 0.0_dp
@@ -308,6 +324,8 @@ contains
     if (allocated(DSPAN))  deallocate(DSPAN)
     if (allocated(BETA))   deallocate(BETA)
     if (allocated(FI0))    deallocate(FI0)
+    if (allocated(FI0_old))deallocate(FI0_old)
+    if (allocated(FIDOT))  deallocate(FIDOT)
     if (allocated(CRANK))  deallocate(CRANK)
     if (allocated(RS))     deallocate(RS)
     if (allocated(FR))     deallocate(FR)

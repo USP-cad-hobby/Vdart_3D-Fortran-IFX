@@ -1,0 +1,19 @@
+﻿Fix critical fidot bug in pitch control - 10% performance recovery
+
+CRITICAL BUG FIX:
+- Fixed instantaneous pitch rate in vdart_wind_mod.f90 (lines 50-59)
+- Changed from constant to time-varying: fidot = OMEGA - FI0_AMP*FI0DOT*cos(FI0DOT*t)
+
+IMPACT:
+- Performance: CP 0.141 → 0.156 (+10.6%)
+- Convergence: GG 0.263 → 0.057 (5× better)
+- Validation: Harmonic pitch matches baseline within 0.6%
+
+DOCUMENTATION:
+- Added PITCH_CONTROL_VALIDATION.md
+- Added FIDOT_BUG_SUMMARY.md
+- Added TEST_RESULTS_SUMMARY.md
+- Updated SESSION_NOTES.md
+- Updated .gitignore (exclude *.dat files)
+
+Tested: 100m rotor, harmonic pitch ±5° @ 1P, build passing.

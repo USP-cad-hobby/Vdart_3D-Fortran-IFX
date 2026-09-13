@@ -19,7 +19,8 @@ contains
 
     integer :: i, j, l
     real(dp) :: teta1, st1, ct1, fi, rz, cf, sf, cb, sb
-    real(dp) :: xi, eta, zeta, fidot, t1, t2, time_now
+    real(dp) :: xi, eta, zeta, t1, t2
+    real(dp) :: local_fidot
     real(dp), allocatable :: uvek(:,:,:), uloc(:,:,:)
 
     if (.not. allocated(SWB) .or. .not. allocated(UREL) .or. .not. allocated(ALFA) .or. .not. allocated(BLSNIT)) then
@@ -47,16 +48,11 @@ contains
     !
     ! Note: time_now is computed from teta since teta = OMEGA * t in solver
     ! =========================================================================
-    if (PITCH_MODE == 1) then
-      ! Harmonic pitch: compute instantaneous pitch rate
-      ! FI0(t) = FI0_BASE + FI0_AMP * sin(FI0DOT * t)
-      ! dFI0/dt = FI0_AMP * FI0DOT * cos(FI0DOT * t)
-      time_now = teta / OMEGA  ! Current simulation time
-      fidot = OMEGA - FI0_AMP * FI0DOT * cos(FI0DOT * time_now)
-    else
-      ! Fixed pitch (mode 0) or cyclic pitch (mode 2): no smooth pitch rate
-      fidot = OMEGA
-    end if
+    ! Note: Per-section pitch rate is provided by state array FIDOT(i,j).
+    ! The local effective pitch-rate used in velocity expressions is
+    !    fidot_local = OMEGA - dFI0/dt
+    ! which we compute below for each section. If FIDOT is not allocated
+    ! we fall back to the legacy scalar value of OMEGA.
 
     ! =========================================================================
     ! First pass: compute UREL at c/4 (quarter-chord)
@@ -85,8 +81,14 @@ contains
         cb = cos(BETA(j))
         sb = sin(BETA(j))
 
-        uvek(i, j, 1) = VIND(j, 1) + SWB(i, j, 1) + rz * OMEGA * ct1 - fidot * (xi * cf * cb - eta * sf + zeta * cf * sb)
-        uvek(i, j, 2) = VIND(j, 2) + SWB(i, j, 2) + rz * OMEGA * st1 - fidot * (xi * sf * cb + eta * cf + zeta * sf * sb)
+        if (allocated(FIDOT)) then
+          local_fidot = OMEGA - FIDOT(i, j)
+        else
+          local_fidot = OMEGA
+        end if
+
+        uvek(i, j, 1) = VIND(j, 1) + SWB(i, j, 1) + rz * OMEGA * ct1 - local_fidot * (xi * cf * cb - eta * sf + zeta * cf * sb)
+        uvek(i, j, 2) = VIND(j, 2) + SWB(i, j, 2) + rz * OMEGA * st1 - local_fidot * (xi * sf * cb + eta * cf + zeta * sf * sb)
         uvek(i, j, 3) = VIND(j, 3) + SWB(i, j, 3)
 
         uloc(i, j, 1) = -uvek(i, j, 1) * sf * cb + uvek(i, j, 2) * cf * cb - uvek(i, j, 3) * sb
@@ -124,8 +126,14 @@ contains
         cb = cos(BETA(j))
         sb = sin(BETA(j))
 
-        uvek(i, j, 1) = VIND(j, 1) + SWB(i, j, 1) + rz * OMEGA * ct1 - fidot * (xi * cf * cb - eta * sf + zeta * cf * sb)
-        uvek(i, j, 2) = VIND(j, 2) + SWB(i, j, 2) + rz * OMEGA * st1 - fidot * (xi * sf * cb + eta * cf + zeta * sf * sb)
+        if (allocated(FIDOT)) then
+          local_fidot = OMEGA - FIDOT(i, j)
+        else
+          local_fidot = OMEGA
+        end if
+
+        uvek(i, j, 1) = VIND(j, 1) + SWB(i, j, 1) + rz * OMEGA * ct1 - local_fidot * (xi * cf * cb - eta * sf + zeta * cf * sb)
+        uvek(i, j, 2) = VIND(j, 2) + SWB(i, j, 2) + rz * OMEGA * st1 - local_fidot * (xi * sf * cb + eta * cf + zeta * sf * sb)
         uvek(i, j, 3) = VIND(j, 3) + SWB(i, j, 3)
 
         uloc(i, j, 1) = -uvek(i, j, 1) * sf * cb + uvek(i, j, 2) * cf * cb - uvek(i, j, 3) * sb

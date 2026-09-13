@@ -163,6 +163,22 @@ contains
         return
 
       end select
+
+      ! --------------------------------------------------------------------
+      ! Compute per-section pitch rate FIDOT(i,j) = dFI0/dt for diagnostics
+      ! and to be used by WIND. Use backward difference: (FI0_new - FI0_old)/DT
+      ! Update FI0_old after computing FIDOT so history is preserved for next
+      ! timestep. DT must be set in main before calling solver_run.
+      ! --------------------------------------------------------------------
+      if (allocated(FIDOT) .and. allocated(FI0_old)) then
+        do i = 1, NB
+          do j = 1, NOL
+            FIDOT(i, j) = (FI0(i, j) - FI0_old(i, j)) / DT
+          end do
+        end do
+        ! Refresh history for next timestep
+        FI0_old = FI0
+      end if
       if (mod(IRUN, 10) == 0 .or. IRUN <= 5) then
         write(*,'(A,I5,A,F8.2,A)') '  Step ', IRUN, '  Azimuth: ', IRUN*DTETA*180.0_dp/pi, ' deg'
       end if
