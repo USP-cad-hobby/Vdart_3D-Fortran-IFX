@@ -19,6 +19,7 @@ program vdart_demo
   real(dp) :: ro_test, any_test, eps_test, ares_test
   real(dp) :: rpm_test, pitchoff, pitchoff_test
   integer :: i, neto, ir_temp
+  logical :: RUN_CONTINUATION
 
   write(*,*) ''
   write(*,*) '========================================='
@@ -169,7 +170,18 @@ program vdart_demo
 
   write(*,*) 'Starting VDaRT time-stepping solver...'
   write(*,*) '--------------------------------------'
-  call solver_run(krun_test, kmaks_test, eps_test, ares_test, ierr)
+  ! Option: run continuation sweep over FI0_AMP (warm-start between steps)
+  RUN_CONTINUATION = .true.   ! Set to .true. to run FI0_AMP continuation test
+
+  ! By default keep OMEGA constant; set USE_VAR_OMEGA to .true. to enable variable rotor rate
+  USE_VAR_OMEGA = .false.
+
+  if (RUN_CONTINUATION) then
+    write(*,*) 'Running continuation sweep: FI0_AMP 0 -> 5 deg in 3 steps (warm-start)'
+    call continuation_FI0AMP(0.0_dp, 5.0_dp*pi/180.0_dp, 3, krun_test, kmaks_test, eps_test, ares_test)
+  else
+    call solver_run(krun_test, kmaks_test, eps_test, ares_test, ierr)
+  end if
 
   if (ierr /= 0) then
     write(*,*) 'WARNING: Solver completed with warnings. ierr=', ierr
