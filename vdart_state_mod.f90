@@ -10,12 +10,14 @@ module vdart_state_mod
   implicit none
 
   public :: allocate_state, deallocate_state
+  public :: save_state, load_state
   public :: allocate_mesh, deallocate_mesh
   public :: NB, NOL, KMNET, NPSI, IR, IRUN, KMAKS
   public :: RO, ANY
   public :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, FI0_BASE, UINF, BOOLPRINT
   public :: H0, A, B, BSAF
   public :: PITCH_MODE, WIND_DIR, USE_ETA_OFFSET
+  public :: USE_VAR_OMEGA
   public :: GAMME, SWB, UREL, ALFA, ALFAF, CL, CD
   public :: FI0_old, FIDOT
   public :: H1, H2, V1, V2, VIND, BLSNIT
@@ -63,6 +65,7 @@ module vdart_state_mod
   ! When .TRUE. (proper):  More accurate for pitching blades (FI0DOT ≠ 0)
   ! ============================================================================
   logical :: USE_ETA_OFFSET = .false.   ! Default: legacy behavior for safety
+  logical :: USE_VAR_OMEGA = .false.    ! Default: keep OMEGA constant unless enabled
 
   real(dp) :: RO, ANY
   real(dp) :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, FI0_BASE, UINF
@@ -134,6 +137,7 @@ contains
     FI0_AMP = 0.0_dp
     FI0_BASE = 0.0_dp
     UINF = 0.0_dp
+    USE_VAR_OMEGA = .false.
     PITCH_MODE = 0      ! Default: fixed pitch (no control)
     WIND_DIR = 0.0_dp   ! Default: wind from +X direction
     H0 = 0.0_dp
@@ -379,5 +383,114 @@ contains
     ITALY = 0
     ITALZ = 0
   end subroutine deallocate_mesh
+
+  ! ================================================================
+  ! State persistence: save / load runtime state for warm-starts
+  ! ================================================================
+  subroutine save_state(filename, ierr)
+    character(len=*), intent(in) :: filename
+    integer, intent(out) :: ierr
+    integer :: ios, unit
+
+    ierr = 0
+    unit = 99
+    open(unit, file=filename, status='replace', form='unformatted', access='stream', iostat=ios)
+    if (ios /= 0) then
+      ierr = 1
+      return
+    end if
+
+    ! Write basic scalars
+    write(unit) NB, NOL, KMNET, IR, IRUN, KMAKS
+    write(unit) RO, ANY, C, DTETA, DT, OMEGA, EPS1, RC, HSTAR
+    write(unit) FI0DOT, FI0_AMP, FI0_BASE, UINF
+    write(unit) PITCH_MODE, WIND_DIR, USE_ETA_OFFSET
+    write(unit) H0, A, B, BSAF
+
+    ! Write arrays (in consistent order)
+    write(unit) GAMME
+    write(unit) SWB
+    write(unit) UREL
+    write(unit) ALFA
+    write(unit) ALFAF
+    write(unit) CL
+    write(unit) CD
+    write(unit) H1
+    write(unit) H2
+    write(unit) V1
+    write(unit) V2
+    write(unit) VIND
+    write(unit) BLSNIT
+    write(unit) DSPAN
+    write(unit) BETA
+    write(unit) FI0
+    write(unit) FI0_old
+    write(unit) FIDOT
+    write(unit) CRANK
+    write(unit) RS
+    write(unit) FR
+    write(unit) FT
+    write(unit) FB
+
+    close(unit)
+
+  end subroutine save_state
+
+  subroutine load_state(filename, ierr)
+    character(len=*), intent(in) :: filename
+    integer, intent(out) :: ierr
+    integer :: ios, unit
+
+    ierr = 0
+    unit = 99
+    open(unit, file=filename, status='old', form='unformatted', access='stream', iostat=ios)
+    if (ios /= 0) then
+      ierr = 1
+      return
+    end if
+
+    ! Read scalars
+    read(unit) NB, NOL, KMNET, IR, IRUN, KMAKS
+    read(unit) RO, ANY, C, DTETA, DT, OMEGA, EPS1, RC, HSTAR
+    read(unit) FI0DOT, FI0_AMP, FI0_BASE, UINF
+    read(unit) PITCH_MODE, WIND_DIR, USE_ETA_OFFSET
+    read(unit) H0, A, B, BSAF
+
+    ! Reallocate arrays using allocate_state to ensure sizes
+    call allocate_state(NB, NOL, KMNET, ios)
+    if (ios /= 0) then
+      ierr = 2
+      close(unit)
+      return
+    end if
+
+    ! Read arrays in same order
+    read(unit) GAMME
+    read(unit) SWB
+    read(unit) UREL
+    read(unit) ALFA
+    read(unit) ALFAF
+    read(unit) CL
+    read(unit) CD
+    read(unit) H1
+    read(unit) H2
+    read(unit) V1
+    read(unit) V2
+    read(unit) VIND
+    read(unit) BLSNIT
+    read(unit) DSPAN
+    read(unit) BETA
+    read(unit) FI0
+    read(unit) FI0_old
+    read(unit) FIDOT
+    read(unit) CRANK
+    read(unit) RS
+    read(unit) FR
+    read(unit) FT
+    read(unit) FB
+
+    close(unit)
+
+  end subroutine load_state
 
 end module vdart_state_mod

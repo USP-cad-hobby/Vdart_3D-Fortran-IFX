@@ -19,46 +19,156 @@ module vdart_solver_mod
 
 contains
 
-  subroutine solver_run(krun_in, kmaks_in, eps_conv, ares, ierr)
+  subroutine solver_run(krun_in, kmaks_in, eps_conv, ares, ierr, warm_start, state_file, mean_torque, rel_rms_out, rel_harm_out)
     integer, intent(in) :: krun_in, kmaks_in
     real(dp), intent(in) :: eps_conv, ares
     integer, intent(out) :: ierr
-	real(dp)			 :: teta, theta_blade
+    logical, intent(in), optional :: warm_start
+    character(len=*), intent(in), optional :: state_file
+    real(dp), intent(out), optional :: mean_torque
+    real(dp), intent(out), optional :: rel_rms_out
+    real(dp), intent(out), optional :: rel_harm_out
+    real(dp)                :: teta, theta_blade
 
     logical :: converged
     real(dp) :: gpert, gpern, gg
-    integer :: i, j
+    integer :: i, j, l
+    real(dp), allocatable :: torque_history(:)
+    real(dp), allocatable :: prev_torque_history(:)
+    real(dp) :: dFI0_dt_global, time_now
+    integer :: rev_counter
+    real(dp) :: mean_torque_local, rel_change, tol_period, denom
+    real(dp) :: tol_rms, tol_harm, cur_harm_mag, prev_harm_mag, rel_harm
+    integer :: iu2, ierr2
 
     ierr = 0
-
-    if (.not. allocated(GAMME)) then
-      write(*,*) 'ERROR: State not allocated. Call allocate_state first.'
-      ierr = 1
-      return
+    write(*,*) 'DEBUG: Entered solver_run, IRUN=', IRUN
+    if (present(warm_start)) then
+      write(*,*) 'DEBUG: warm_start arg present, value=', warm_start
+    else
+      write(*,*) 'DEBUG: warm_start arg not present'
     end if
+    ! If warm_start requested, optionally load saved state
+    if (present(warm_start)) then
+      if (warm_start) then
+        if (present(state_file)) then
+          call load_state(state_file, ierr)
+          if (ierr /= 0) then
+            write(*,*) 'ERROR: Failed to load warm-start state from ', state_file
+            return
+          end if
+        end if
+        write(*,*) 'Warm-start: using existing state. IRUN=', IRUN
+      else
+        ! warm_start present but false -> continue with normal init
+        if (.not. allocated(GAMME)) then
+          write(*,*) 'ERROR: State not allocated. Call allocate_state first.'
+          ierr = 1
+          return
+        else
+          write(*,*) 'DEBUG: GAMME allocated OK. NB,NOL,KMNET=', NB, NOL, KMNET
+        end if
 
-    EPS1 = eps_conv
-    KMAKS = kmaks_in
-    IRUN = 0
-    IR = int(2.0_dp * pi / DTETA)
-    NPSI = IR + 1
+        EPS1 = eps_conv
+        KMAKS = kmaks_in
+        IRUN = 0
+        IR = int(2.0_dp * pi / DTETA)
+        NPSI = IR + 1
 
-    write(*,*) 'Initializing vortex mesh (START)...'
-    call start(.false., ierr)
-    if (ierr /= 0) then
-      write(*,*) 'ERROR: START failed. ierr=', ierr
-      return
+        write(*,*) 'Initializing vortex mesh (START)...'
+        call start(.false., ierr)
+        if (ierr /= 0) then
+          write(*,*) 'ERROR: START failed. ierr=', ierr
+          return
+        end if
+
+        write(*,*) 'Starting time-stepping loop...'
+        write(*,'(A,I4,A)') '  Steps per revolution (IR): ', IR
+      end if
+    else
+      write(*,*) 'DEBUG: allocated(GAMME)=', allocated(GAMME)
+      if (.not. allocated(GAMME)) then
+        write(*,*) 'ERROR: State not allocated. Call allocate_state first.'
+        ierr = 1
+        return
+      else
+        write(*,*) 'DEBUG: GAMME allocated OK. NB,NOL,KMNET=', NB, NOL, KMNET
+      end if
+
+      EPS1 = eps_conv
+      KMAKS = kmaks_in
+      IRUN = 0
+      IR = int(2.0_dp * pi / DTETA)
+      NPSI = IR + 1
+
+      write(*,*) 'Initializing vortex mesh (START)...'
+      call start(.false., ierr)
+      if (ierr /= 0) then
+        write(*,*) 'ERROR: START failed. ierr=', ierr
+        return
+      end if
+
+      write(*,*) 'Starting time-stepping loop...'
+      write(*,'(A,I4,A)') '  Steps per revolution (IR): ', IR
     end if
-
-    write(*,*) 'Starting time-stepping loop...'
-    write(*,'(A,I4,A)') '  Steps per revolution (IR): ', IR
     converged = .false.
+
+    ! Initialize buffer for torque history per revolution (for periodicity monitoring)
+    allocate(torque_history(IR), stat=ierr)
+    if (ierr /= 0) then
+      write(*,*) 'ERROR: Failed to allocate torque_history'
+      ierr = 2
+      return
+    end if
+    torque_history = 0.0_dp
+
+    ! Allocate storage for previous-revolution torque to detect periodicity
+    rev_counter = 0
+    tol_period = 1.0E-3_dp
+    tol_rms = 1.0E-3_dp
+    tol_harm = 1.0E-3_dp
+    prev_harm_mag = 0.0_dp
+    ierr2 = 0
+    allocate(prev_torque_history(IR), stat=ierr2)
+    if (ierr2 /= 0) then
+      write(*,*) 'WARNING: Failed to allocate prev_torque_history; periodicity monitor disabled.'
+      if (allocated(prev_torque_history)) deallocate(prev_torque_history)
+    else
+      prev_torque_history = 0.0_dp
+    end if
+
+    ! Initialize simulation time (account for warm-start IRUN)
+    if (IRUN > 0) then
+      time_now = real(IRUN, dp) * DT
+    else
+      time_now = 0.0_dp
+    end if
 
     do while (.not. converged .and. IRUN < KMAKS)
 
       call nethas()
 
       IRUN = IRUN + 1
+
+      ! Optionally update instantaneous rotor rate and time step (variable OMEGA)
+      if (present(USE_VAR_OMEGA)) then
+        if (USE_VAR_OMEGA) then
+          if (OMEGA <= 1.0E-12_dp) then
+            OMEGA = max(OMEGA, 1.0E-8_dp)
+          end if
+          DT = DTETA / OMEGA
+        end if
+      else
+        ! Backwards-compatible: check global flag in state module
+        if (USE_VAR_OMEGA) then
+          if (OMEGA <= 1.0E-12_dp) then
+            OMEGA = max(OMEGA, 1.0E-8_dp)
+          end if
+          DT = DTETA / OMEGA
+        end if
+      end if
+      ! Advance simulation time by this DT (may be unchanged if variable OMEGA disabled)
+      time_now = time_now + DT
 
       ! ========================================================================
       ! PITCH CONTROL ACTUATION
@@ -166,19 +276,30 @@ contains
 
       ! --------------------------------------------------------------------
       ! Compute per-section pitch rate FIDOT(i,j) = dFI0/dt for diagnostics
-      ! and to be used by WIND. Use backward difference: (FI0_new - FI0_old)/DT
-      ! Update FI0_old after computing FIDOT so history is preserved for next
-      ! timestep. DT must be set in main before calling solver_run.
+      ! and to be used by WIND. Use a GLOBAL analytical/zero derivative
+      ! depending on PITCH_MODE to avoid noisy per-section finite-differences
+      ! for cyclic/step changes. For harmonic mode use analytic derivative:
+      !   d/dt FI0 = FI0_AMP * FI0DOT * cos(FI0DOT * t)
+      ! For fixed or cyclic modes we set derivative to zero (instantaneous
+      ! step changes handled as zero-rate except at discontinuities).
       ! --------------------------------------------------------------------
-      if (allocated(FIDOT) .and. allocated(FI0_old)) then
+      if (allocated(FIDOT)) then
+        if (PITCH_MODE == 1) then
+          time_now = DT * real(IRUN, dp)
+          dFI0_dt_global = FI0_AMP * FI0DOT * cos(FI0DOT * time_now)
+        else
+          dFI0_dt_global = 0.0_dp
+        end if
+
         do i = 1, NB
           do j = 1, NOL
-            FIDOT(i, j) = (FI0(i, j) - FI0_old(i, j)) / DT
+            FIDOT(i, j) = dFI0_dt_global
           end do
         end do
-        ! Refresh history for next timestep
-        FI0_old = FI0
       end if
+
+      ! Refresh FI0_old for any diagnostics that rely on it
+      if (allocated(FI0_old)) FI0_old = FI0
       if (mod(IRUN, 10) == 0 .or. IRUN <= 5) then
         write(*,'(A,I5,A,F8.2,A)') '  Step ', IRUN, '  Azimuth: ', IRUN*DTETA*180.0_dp/pi, ' deg'
       end if
@@ -191,6 +312,76 @@ contains
       end if
 
       call forces()
+
+      ! Collect per-azimuth torque over the last full revolution for periodicity checks
+      if (mod(IRUN, IR) == 0) then
+        torque_history = 0.0_dp
+        do l = max(1, IRUN - IR + 1), IRUN
+          do i = 1, NB
+            do j = 1, NOL
+              torque_history(l - max(1, IRUN - IR + 1) + 1) = &
+                torque_history(l - max(1, IRUN - IR + 1) + 1) + &
+                FT(i, j, l) * (BLSNIT(1, j, 2) + BLSNIT(1, j+1, 2)) * 0.5_dp
+            end do
+          end do
+        end do
+        ! torque_history now holds torque vs azimuth for the latest revolution
+        rev_counter = rev_counter + 1
+        if (allocated(prev_torque_history)) then
+          ! Compute mean torque for this revolution
+          mean_torque_local = 0.0_dp
+          do l = 1, IR
+            mean_torque_local = mean_torque_local + torque_history(l)
+          end do
+          mean_torque_local = mean_torque_local / real(IR, dp)
+
+          if (rev_counter > 1) then
+            ! Normalized RMS difference between revolutions
+            denom = 0.0_dp
+            rel_change = 0.0_dp
+            do l = 1, IR
+              rel_change = rel_change + (torque_history(l) - prev_torque_history(l))**2
+              denom = denom + prev_torque_history(l)**2
+            end do
+            if (denom <= 0.0_dp) then
+              denom = 1.0_dp
+            end if
+            rel_change = sqrt(rel_change / denom)
+
+            ! 1P harmonic detection (DFT at k=1)
+            cur_harm_mag = 0.0_dp
+            do l = 1, IR
+              cur_harm_mag = cur_harm_mag + torque_history(l) * cos(2.0_dp*pi*(real(l-1,dp))/real(IR,dp))
+            end do
+            cur_harm_mag = abs(cur_harm_mag) / real(IR, dp)
+
+            if (prev_harm_mag <= 0.0_dp) then
+              rel_harm = 1.0_dp
+            else
+              rel_harm = abs(cur_harm_mag - prev_harm_mag) / prev_harm_mag
+            end if
+
+            ! Report computed metrics
+            if (present(rel_rms_out)) then
+              rel_rms_out = rel_change
+            end if
+            if (present(rel_harm_out)) then
+              rel_harm_out = rel_harm
+            end if
+
+            write(*,'(A,F8.6,A,F8.6)') '  rev_metrics: rel_rms=', rel_change, '  rel_harm=', rel_harm
+
+            ! If both RMS and harmonic changes are below tolerance and past krun, consider periodic
+            if (rel_change < tol_rms .and. rel_harm < tol_harm .and. IRUN > krun_in) then
+              write(*,'(A,F8.6,A,F8.6)') 'Periodicity detected (rms,1P)=', rel_change, rel_harm
+              converged = .true.
+            end if
+          end if
+
+          prev_torque_history = torque_history
+          prev_harm_mag = cur_harm_mag
+        end if
+      end if
 
       if (IRUN > krun_in) then
         gpert = 0.0_dp
@@ -223,6 +414,18 @@ contains
 
     write(*,*) 'Time-stepping complete. IRUN=', IRUN
     write(*,*) 'Computing final statistics...'
+    ! Compute mean torque over last revolution if available
+    mean_torque = 0.0_dp
+    if (allocated(torque_history)) then
+      mean_torque = 0.0_dp
+      do l = 1, size(torque_history)
+        mean_torque = mean_torque + torque_history(l)
+      end do
+      mean_torque = mean_torque / real(size(torque_history), dp)
+    end if
+    if (present(mean_torque)) then
+      mean_torque = mean_torque
+    end if
     call output_summary()
     call diagnostic_dump()
 
@@ -376,5 +579,76 @@ contains
     write(*,*) 'Torque data written to: torque_vs_azimuth.dat'
 
   end subroutine diagnostic_dump
+
+  subroutine continuation_FI0AMP(fi0_start, fi0_stop, fi0_steps, krun_in, kmaks_in, eps_conv, ares)
+    real(dp), intent(in) :: fi0_start, fi0_stop
+    integer, intent(in) :: fi0_steps, krun_in, kmaks_in
+    real(dp), intent(in) :: eps_conv, ares
+    integer :: ierr
+    integer :: step
+    real(dp) :: fi0_val
+    character(len=128) :: state_file
+    real(dp) :: FI0_AMP_prev
+    character(len=32) :: tmpstr
+    real(dp) :: mean_tq
+    integer :: out_ierr
+    character(len=128) :: csv_file
+    integer :: csv_unit, openstat
+
+    if (fi0_steps < 1) then
+      write(*,*) 'ERROR: fi0_steps must be >= 1'
+      return
+    end if
+
+    do step = 1, fi0_steps
+      fi0_val = fi0_start + (real(step-1, dp) / real(max(1, fi0_steps-1), dp)) * (fi0_stop - fi0_start)
+      FI0_AMP = fi0_val
+      write(*,'(A,F8.5)') 'Continuation step: FI0_AMP = ', FI0_AMP
+
+      if (step == 1) then
+        ! First step: cold start
+        call solver_run(krun_in, kmaks_in, eps_conv, ares, ierr, mean_torque=mean_tq, rel_rms_out=out_ierr)
+      else
+        ! Warm start from previous saved state
+        write(tmpstr, '(F6.4)') FI0_AMP_prev
+        state_file = 'state_fi0_' // trim(adjustl(tmpstr)) // '.bin'
+        call solver_run(krun_in, kmaks_in, eps_conv, ares, ierr, .true., trim(state_file), mean_torque=mean_tq, rel_rms_out=out_ierr)
+      end if
+
+      if (ierr /= 0) then
+        write(*,'(A,I3)') 'Solver returned error. ierr=', ierr
+        return
+      end if
+
+      ! Save state for next warm start
+      write(tmpstr, '(F6.4)') FI0_AMP
+      state_file = 'state_fi0_' // trim(adjustl(tmpstr)) // '.bin'
+      call save_state(trim(state_file), ierr)
+      if (ierr /= 0) then
+        write(*,*) 'WARNING: Failed to save state to ', trim(state_file)
+      end if
+
+      ! Log summary line for continuation step
+      write(*,'(A,F8.4,A,F12.4)') 'Continuation step FI0_AMP=', FI0_AMP, '  mean_torque=', mean_tq
+
+      ! Append CSV for post-processing
+      csv_file = 'continuation_results.csv'
+      open(newunit=csv_unit, file=csv_file, status='unknown', action='write', iostat=openstat)
+      if (openstat == 0) then
+        ! If file newly created, write header
+        inquire(unit=csv_unit, size=openstat)
+        if (openstat == 0) then
+          write(csv_unit,'(A)') 'FI0_AMP_deg,mean_torque_Nm'
+        end if
+        write(csv_unit,'(F8.4,1X,F12.4)') FI0_AMP*180.0_dp/pi, mean_tq
+        close(csv_unit)
+      else
+        write(*,*) 'WARNING: Could not open CSV file for continuation results.'
+      end if
+
+      FI0_AMP_prev = FI0_AMP
+    end do
+
+  end subroutine continuation_FI0AMP
 
 end module vdart_solver_mod
