@@ -119,15 +119,25 @@ program vdart_demo
   !   - Use for: Compensating velocity deficit, reducing torque ripple
   ! ======================================================
   ! *** STEP 1 TEST: Harmonic Pitch at 1P frequency ***
-  PITCH_MODE = 1                     ! Harmonic mode
-  FI0_BASE = 0.0_dp                  ! No mean pitch offset
-  FI0DOT = omega_test                ! Pitch frequency = rotor frequency (1P)
-  FI0_AMP = 5.0_dp * pi / 180.0_dp   ! ±5° pitch amplitude
-  WIND_DIR = 0.0_dp                  ! Wind direction (radians) - 0 = wind from +X axis
+  !PITCH_MODE = 1                     ! Harmonic mode
+  !FI0_BASE = 0.0_dp                  ! No mean pitch offset
+  !FI0DOT = omega_test                ! Pitch frequency = rotor frequency (1P)
+  !FI0_AMP = 5.0_dp * pi / 180.0_dp   ! ±5° pitch amplitude
+  !WIND_DIR = 0.0_dp                  ! Wind direction (radians) - 0 = wind from +X axis
 
+  !write(*,*) ''
+  !write(*,*) '*** PITCH CONTROL TEST: HARMONIC MODE ***'
+  ! *** STEP 0 TEST: Fixed 
+  PITCH_MODE = 0                      !Fixed Pitch mode (legacy validation)
+  FI0DOT = 0.0_dp                     ! No pitch frequency (fixed pitch)
+  FI0_AMP =0.0_dp                     ! ±0° pitch amplitude
+  FI0_BASE = 0.0_dp                   ! No mean pitch offset
+  WIND_DIR = 0.0_dp 
+  FI0 = FI0_BASE
   write(*,*) ''
-  write(*,*) '*** PITCH CONTROL TEST: HARMONIC MODE ***'
-  write(*,'(A,I2)')     '  Pitch mode:             ', 1
+  !write(*,*) '*** PITCH CONTROL TEST:Static Fixed Pitch Mode ***'
+  
+  write(*,'(A,I2)')     '  Pitch mode:             ', PITCH_MODE
   write(*,'(A,F6.2,A)') '  Pitch amplitude:        ', FI0_AMP*180.0_dp/pi, ' deg'
   write(*,'(A,F6.3,A)') '  Pitch frequency:        ', FI0DOT, ' rad/s (1P)'
   write(*,*) ''
