@@ -115,3 +115,4 @@ FI0_AMP = 0.0            ! No pitch amplitude
 Tell Copilot:
 > "I'm continuing VDaRT development. Please read `docs/coordinate_transformations.md` 
 > and `docs/SESSION_NOTES.md` for context. Last CP was ~0.14 with good convergence."
+2026-09-15: Baseline test on branch test/pitch-baseline. FI0_BASE=0.0_dp, FI0_AMP=0.0_dp. Built exe: build/vdart_baseline.exe. Commit: fc1f07f
