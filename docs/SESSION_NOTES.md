@@ -1,6 +1,18 @@
 # VDaRT Development Session Notes
 
-## Latest Session: 2026-08-27
+## Latest Session: 2026-09-15
+
+### Baseline Test: 2026-09-15
+- **Branch:** test/pitch-baseline
+- **Parameters:** FI0_BASE=0.0_dp, FI0_AMP=0.0_dp
+- **Built exe:** build/vdart_baseline.exe
+- **Commit:** fc1f07f
+
+The baseline test was executed and the resulting executable saved for reproducibility. See tests/ for the comparison scaffold.
+
+---
+
+## Previous Session: 2026-08-27
 
 ### 🔥 CRITICAL BUG FIX: Pitch Rate Calculation
 **Bug Found**: `fidot = OMEGA - FI0DOT` (constant, WRONG)  
@@ -111,7 +123,7 @@ FI0_AMP = 0.0            ! No pitch amplitude
 - `debug_forces.dat` - Force breakdown per blade
 - `torque_vs_azimuth.dat` - Torque pattern data
 
-### To Resume Next Session
+To Resume Next Session
 Tell Copilot:
 > "I'm continuing VDaRT development. Please read `docs/coordinate_transformations.md` 
 > and `docs/SESSION_NOTES.md` for context. Last CP was ~0.14 with good convergence."
