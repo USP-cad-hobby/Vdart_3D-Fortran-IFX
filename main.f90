@@ -131,7 +131,7 @@ program vdart_demo
   PITCH_MODE = 0                      !Fixed Pitch mode (legacy validation)
   FI0DOT = 0.0_dp                     ! No pitch frequency (fixed pitch)
   FI0_AMP =0.0_dp                     ! ±0° pitch amplitude
-  FI0_BASE = 0.0_dp                   ! No mean pitch offset
+  FI0_BASE = 2.0_dp * pi / 180.0_dp   ! +2° pitch offset..in radians
   WIND_DIR = 0.0_dp 
   FI0 = FI0_BASE
   write(*,*) ''
