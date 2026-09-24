@@ -583,6 +583,7 @@ contains
     character(len=32) :: tmpstr
     real(dp) :: mean_tq
     real(dp) :: out_ierr
+    logical :: file_exists
     character(len=128) :: csv_file
     integer :: csv_unit, openstat
 
@@ -600,10 +601,16 @@ contains
         ! First step: cold start
         call solver_run(krun_in, kmaks_in, eps_conv, ares, ierr, mean_torque=mean_tq, rel_rms_out=out_ierr)
       else
-        ! Warm start from previous saved state
+        ! Warm start from previous saved state if available; otherwise do a cold start
         write(tmpstr, '(F6.4)') FI0_AMP_prev
         state_file = 'state_fi0_' // trim(adjustl(tmpstr)) // '.bin'
-        call solver_run(krun_in, kmaks_in, eps_conv, ares, ierr, .true., trim(state_file), mean_torque=mean_tq, rel_rms_out=out_ierr)
+        inquire(file=trim(state_file), exist=file_exists)
+        if (file_exists) then
+          call solver_run(krun_in, kmaks_in, eps_conv, ares, ierr, .true., trim(state_file), mean_torque=mean_tq, rel_rms_out=out_ierr)
+        else
+          write(*,'(A)') 'WARNING: warm-start state file not found: '//trim(state_file)//' -- performing cold start for this continuation step.'
+          call solver_run(krun_in, kmaks_in, eps_conv, ares, ierr, mean_torque=mean_tq, rel_rms_out=out_ierr)
+        end if
       end if
 
       if (ierr /= 0) then
