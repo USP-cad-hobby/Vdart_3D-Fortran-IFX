@@ -420,20 +420,41 @@ contains
     call output_summary()
     call diagnostic_dump()
 
-    ! Optionally auto-save state for future warm-starts
+    ! Optionally auto-save state for future warm-starts (atomic write + timestamp + latest copy)
     if (AUTO_SAVE_STATE) then
-      ! Construct state filename based on FI0_BASE (degrees format used previously)
-      character(len=128) :: save_file
-      integer :: sav_ierr
+      character(len=128) :: save_file, tmp_file, final_file, latest_file
+      integer :: sav_ierr, mvstat, cpstat
+      integer :: datevec(8)
+      character(len=32) :: timestr
       real(dp) :: tmpdeg
+
       tmpdeg = FI0_BASE
       write(tmpstr, '(F6.4)') tmpdeg
-      save_file = 'state_fi0_' // trim(adjustl(tmpstr)) // '.bin'
-      call save_state(trim(save_file), sav_ierr)
+      ! timestamp YYYYMMDD_HHMMSS
+      call date_and_time(values=datevec)
+      write(timestr, '(I4.4,I2.2,I2.2,1X,I2.2,I2.2,I2.2)') datevec(1), datevec(2), datevec(3), datevec(5), datevec(6), datevec(7)
+
+      final_file = 'state_fi0_' // trim(adjustl(tmpstr)) // '_' // trim(timestr) // '.bin'
+      tmp_file = trim(final_file) // '.tmp'
+      latest_file = 'state_fi0_' // trim(adjustl(tmpstr)) // '_latest.bin'
+
+      call save_state(trim(tmp_file), sav_ierr)
       if (sav_ierr == 0) then
-        write(*,'(A)') 'Auto-saved state to '//trim(save_file)
+        ! Move temp -> final atomically using Fortran execute_command_line
+        call execute_command_line('cmd /c move /Y "'//trim(tmp_file)//'" "'//trim(final_file)//'"', wait=.true., exitstat=mvstat)
+        if (mvstat == 0) then
+          ! Copy final to latest (overwrite)
+          call execute_command_line('cmd /c copy /Y "'//trim(final_file)//'" "'//trim(latest_file)//'"', wait=.true., exitstat=cpstat)
+          if (cpstat == 0) then
+            write(*,'(A)') 'Auto-saved state to '//trim(final_file)//' and updated latest -> '//trim(latest_file)
+          else
+            write(*,'(A)') 'Auto-saved state to '//trim(final_file)//' but failed to update latest copy (cpstat='//I0')', cpstat
+          end if
+        else
+          write(*,'(A)') 'WARNING: Failed to move temp state file to final (mvstat='//I0')', mvstat
+        end if
       else
-        write(*,'(A)') 'WARNING: Auto-save state failed for '//trim(save_file)
+        write(*,'(A)') 'WARNING: Auto-save state failed for temp file '//trim(tmp_file)
       end if
     end if
 
