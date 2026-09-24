@@ -38,3 +38,5 @@ BuildLog.htm
 # Output data files
 *.dat
 *.DAT
+state_*.bin
+continuation_results.csv
