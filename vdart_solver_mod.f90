@@ -420,6 +420,23 @@ contains
     call output_summary()
     call diagnostic_dump()
 
+    ! Optionally auto-save state for future warm-starts
+    if (AUTO_SAVE_STATE) then
+      ! Construct state filename based on FI0_BASE (degrees format used previously)
+      character(len=128) :: save_file
+      integer :: sav_ierr
+      real(dp) :: tmpdeg
+      tmpdeg = FI0_BASE
+      write(tmpstr, '(F6.4)') tmpdeg
+      save_file = 'state_fi0_' // trim(adjustl(tmpstr)) // '.bin'
+      call save_state(trim(save_file), sav_ierr)
+      if (sav_ierr == 0) then
+        write(*,'(A)') 'Auto-saved state to '//trim(save_file)
+      else
+        write(*,'(A)') 'WARNING: Auto-save state failed for '//trim(save_file)
+      end if
+    end if
+
   end subroutine solver_run
 
   subroutine output_summary()

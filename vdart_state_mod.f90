@@ -18,6 +18,7 @@ module vdart_state_mod
   public :: H0, A, B, BSAF
   public :: PITCH_MODE, WIND_DIR, USE_ETA_OFFSET
   public :: USE_VAR_OMEGA
+  public :: AUTO_SAVE_STATE
   public :: GAMME, SWB, UREL, ALFA, ALFAF, CL, CD
   public :: FI0_old, FIDOT
   public :: H1, H2, V1, V2, VIND, BLSNIT
@@ -66,6 +67,7 @@ module vdart_state_mod
   ! ============================================================================
   logical :: USE_ETA_OFFSET = .false.   ! Default: legacy behavior for safety
   logical :: USE_VAR_OMEGA = .false.    ! Default: keep OMEGA constant unless enabled
+  logical :: AUTO_SAVE_STATE = .true.   ! Automatically save state after successful runs
 
   real(dp) :: RO, ANY
   real(dp) :: C, DTETA, DT, OMEGA, EPS1, RC, HSTAR, FI0DOT, FI0_AMP, FI0_BASE, UINF
