@@ -582,7 +582,7 @@ contains
     real(dp) :: FI0_AMP_prev
     character(len=32) :: tmpstr
     real(dp) :: mean_tq
-    integer :: out_ierr
+    real(dp) :: out_ierr
     character(len=128) :: csv_file
     integer :: csv_unit, openstat
 
