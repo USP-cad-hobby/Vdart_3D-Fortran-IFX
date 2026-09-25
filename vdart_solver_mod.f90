@@ -40,6 +40,13 @@ contains
     real(dp) :: mean_torque_local, rel_change, tol_period, denom
     real(dp) :: tol_rms, tol_harm, cur_harm_mag, prev_harm_mag, rel_harm
     integer :: iu2, ierr2
+    ! Variables for auto-save state (declared here to avoid specification in executable part)
+    character(len=128) :: save_file, tmp_file, final_file, latest_file
+    integer :: sav_ierr, mvstat, cpstat
+    integer :: datevec(8)
+    character(len=32) :: timestr
+    real(dp) :: tmpdeg
+    character(len=32) :: tmpstr
 
     ierr = 0
     write(*,*) 'DEBUG: Entered solver_run, IRUN=', IRUN
@@ -422,12 +429,7 @@ contains
 
     ! Optionally auto-save state for future warm-starts (atomic write + timestamp + latest copy)
     if (AUTO_SAVE_STATE) then
-      character(len=128) :: save_file, tmp_file, final_file, latest_file
-      integer :: sav_ierr, mvstat, cpstat
-      integer :: datevec(8)
-      character(len=32) :: timestr
-      real(dp) :: tmpdeg
-
+      ! Use variables declared in the specification section (avoid re-declaration here)
       tmpdeg = FI0_BASE
       write(tmpstr, '(F6.4)') tmpdeg
       ! timestamp YYYYMMDD_HHMMSS
@@ -448,10 +450,12 @@ contains
           if (cpstat == 0) then
             write(*,'(A)') 'Auto-saved state to '//trim(final_file)//' and updated latest -> '//trim(latest_file)
           else
-            write(*,'(A)') 'Auto-saved state to '//trim(final_file)//' but failed to update latest copy (cpstat='//I0')', cpstat
+            write(tmpstr,'(I6)') cpstat
+            write(*,'(A)') 'Auto-saved state to '//trim(final_file)//' but failed to update latest copy (cpstat=' // trim(adjustl(tmpstr)) // ')'
           end if
         else
-          write(*,'(A)') 'WARNING: Failed to move temp state file to final (mvstat='//I0')', mvstat
+          write(tmpstr,'(I6)') mvstat
+          write(*,'(A)') 'WARNING: Failed to move temp state file to final (mvstat=' // trim(adjustl(tmpstr)) // ')'
         end if
       else
         write(*,'(A)') 'WARNING: Auto-save state failed for temp file '//trim(tmp_file)
