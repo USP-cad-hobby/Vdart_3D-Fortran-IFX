@@ -151,7 +151,6 @@ contains
       IRUN = IRUN + 1
 
       ! Optionally update instantaneous rotor rate and time step (variable OMEGA)
-      if (present(USE_VAR_OMEGA)) then
       ! Use module-level USE_VAR_OMEGA flag (PRESENT() is invalid for module variables)
       if (USE_VAR_OMEGA) then
         if (OMEGA <= 1.0E-12_dp) then
