@@ -151,21 +151,12 @@ contains
       IRUN = IRUN + 1
 
       ! Optionally update instantaneous rotor rate and time step (variable OMEGA)
-      if (present(USE_VAR_OMEGA)) then
-        if (USE_VAR_OMEGA) then
-          if (OMEGA <= 1.0E-12_dp) then
-            OMEGA = max(OMEGA, 1.0E-8_dp)
-          end if
-          DT = DTETA / OMEGA
+      ! Use module-level USE_VAR_OMEGA flag (PRESENT() is invalid for module variables)
+      if (USE_VAR_OMEGA) then
+        if (OMEGA <= 1.0E-12_dp) then
+          OMEGA = max(OMEGA, 1.0E-8_dp)
         end if
-      else
-        ! Backwards-compatible: check global flag in state module
-        if (USE_VAR_OMEGA) then
-          if (OMEGA <= 1.0E-12_dp) then
-            OMEGA = max(OMEGA, 1.0E-8_dp)
-          end if
-          DT = DTETA / OMEGA
-        end if
+        DT = DTETA / OMEGA
       end if
       ! Advance simulation time by this DT (may be unchanged if variable OMEGA disabled)
       time_now = time_now + DT
@@ -591,7 +582,7 @@ contains
     real(dp) :: FI0_AMP_prev
     character(len=32) :: tmpstr
     real(dp) :: mean_tq
-    integer :: out_ierr
+    real(dp) :: out_ierr
     character(len=128) :: csv_file
     integer :: csv_unit, openstat
 
