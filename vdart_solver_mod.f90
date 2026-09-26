@@ -256,12 +256,6 @@ contains
           end if
         end do
 
-      case default
-        ! Invalid mode - should not happen if main.f90 is configured correctly
-        write(*,*) 'ERROR: Invalid PITCH_MODE =', PITCH_MODE
-        write(*,*) '       Valid values are 0 (fixed), 1 (harmonic), 2 (cyclic).'
-        ierr = 99
-        return
       case (3)
         ! --------------------------------------------------------------------
         ! MODE 3: PHASED PER-BLADE FIXED OFFSET
