@@ -1,0 +1,10 @@
+Baseline vs Offset Combined Summary
+=================================
+Baseline mean torque reported: 542314.0 Nm
+Baseline CP reported: 0.13672
+
+Offset mean torque reported: 649352.0 Nm
+Offset CP reported: 0.1637
+
+Delta mean torque (offset - baseline): 107038.00 Nm (19.74%)
+Delta CP (offset - baseline): 0.02698 (19.73%)
