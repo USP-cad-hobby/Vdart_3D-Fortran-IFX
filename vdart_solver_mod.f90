@@ -262,7 +262,28 @@ contains
         write(*,*) '       Valid values are 0 (fixed), 1 (harmonic), 2 (cyclic).'
         ierr = 99
         return
+      case (3)
+        ! --------------------------------------------------------------------
+        ! MODE 3: PHASED PER-BLADE FIXED OFFSET
+        ! --------------------------------------------------------------------
+        ! Use a phased pattern across blades: alternate +FI0_BASE and -FI0_BASE
+        ! (effectively a 180-degree phase shift between adjacent blades).
+        do i = 1, NB
+          do j = 1, NOL
+            if (mod(i,2) == 0) then
+              FI0(i, j) = -FI0_BASE
+            else
+              FI0(i, j) = FI0_BASE
+            end if
+          end do
+        end do
 
+      case default
+        ! Invalid mode - should not happen if main.f90 is configured correctly
+        write(*,*) 'ERROR: Invalid PITCH_MODE =', PITCH_MODE
+        write(*,*) '       Valid values are 0 (fixed), 1 (harmonic), 2 (cyclic), 3 (phased) .'
+        ierr = 99
+        return
       end select
 
       ! --------------------------------------------------------------------

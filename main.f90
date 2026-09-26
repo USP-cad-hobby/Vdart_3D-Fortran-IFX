@@ -118,6 +118,10 @@ program vdart_demo
   !   - Downwind (90°<θ_rel<270°): FI0 = FI0_BASE + FI0_AMP (increase AoA)
   !   - Upwind (otherwise):        FI0 = FI0_BASE (baseline)
   !   - Use for: Compensating velocity deficit, reducing torque ripple
+  !
+  ! PITCH_MODE = 3: Fixed Offset Phased (per-blade offset)
+  !   - Alternate blades have opposite pitch offsets:  +FI0_BASE, -FI0_BASE, +FI0_BASE, ...
+  !   - Use for: Exploring effects of distributed pitch control, stability assessment
   ! ======================================================
   ! *** STEP 1 TEST: Harmonic Pitch at 1P frequency ***
   !PITCH_MODE = 1                     ! Harmonic mode
@@ -129,27 +133,12 @@ program vdart_demo
   !write(*,*) ''
   !write(*,*) '*** PITCH CONTROL TEST: HARMONIC MODE ***'
   ! *** STEP 0 TEST: Fixed 
-  PITCH_MODE = 0                      !Fixed Pitch mode (legacy validation)
+  PITCH_MODE = 3                      ! Phased per-blade fixed offset (alternate blades)
   FI0DOT = 0.0_dp                     ! No pitch frequency (fixed pitch)
   FI0_AMP =0.0_dp                     ! ±0° pitch amplitude
   FI0_BASE = 2.0_dp * pi / 180.0_dp   ! +2° mean pitch offset (radians)
   WIND_DIR = 0.0_dp
-  ! Option: per-blade phased offsets (180° phase shift between adjacent blades)
-  ! When enabled, blades will alternate +FI0_BASE, -FI0_BASE, +FI0_BASE, ...
-  USE_BLADE_PHASED_OFFSET = .true.
-  if (USE_BLADE_PHASED_OFFSET) then
-    do i = 1, nb_test
-      do j = 1, nol_test
-        if (mod(i,2) == 0) then
-          FI0(i,j) = -FI0_BASE
-        else
-          FI0(i,j) = FI0_BASE
-        end if
-      end do
-    end do
-  else
-    FI0 = FI0_BASE
-  end if
+  ! FI0 will be set in solver when PITCH_MODE=3
   write(*,*) ''
   !write(*,*) '*** PITCH CONTROL TEST:Static Fixed Pitch Mode ***'
   
