@@ -3,6 +3,9 @@ name: PR CI - compare & plot
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  # Use pull_request_target for privileged actions that need repository context
+  pull_request_target:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
@@ -11,8 +14,10 @@ permissions:
 
 jobs:
   compare-and-plot:
-    name: Run comparison scripts and post PR checklist
+    name: Run comparison scripts and generate artifacts
     runs-on: ubuntu-latest
+    # Only run this job for the unprivileged pull_request event (not pull_request_target)
+    if: github.event_name == 'pull_request'
 
     steps:
     - name: Checkout
@@ -46,6 +51,26 @@ jobs:
       continue-on-error: true
       uses: actions/github-script@v6
       with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const issue = context.issue;
+          const body = `Automated verification completed for this PR. The workflow ran these steps:\n\n- Executed tests/compare_three.py to produce combined summary and CSV.\n- Executed tests/plot_torque_runs.py to generate PNG plots.\n- Uploaded plots as a workflow artifact ("torque-plots").\n\nPlease review the following checklist before merging:\n\n- [ ] Code changes (vdart_solver_mod.f90, main.f90) reviewed for correctness.\n- [ ] Data artifacts reviewed: tests/results/combined_three_comparison.txt and tests/results/combined_three_torque.csv.\n- [ ] Plots reviewed: tests/results/plots/torque_combined.png (download from artifacts).\n- [ ] Confirm builds were produced with Intel Fortran (Release|x64) and the same solver settings across runs.\n- [ ] Optional: Request additional reviewer or visual inspection of torque vs azimuth.\n\nIf you want automated plotting tweaks or additional checks (CSV validations, tolerances), reply here or update the workflow.`;
+          await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, body});
+
+  post-checklist:
+    name: Post PR checklist (privileged)
+    runs-on: ubuntu-latest
+    needs: []
+    # This job runs in the repository context so it can post comments for forked PRs
+    if: github.event_name == 'pull_request_target'
+    permissions:
+      issues: write
+      contents: read
+    steps:
+    - name: Post PR checklist comment
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const issue = context.issue;
           const body = `Automated verification completed for this PR. The workflow ran these steps:\n\n- Executed tests/compare_three.py to produce combined summary and CSV.\n- Executed tests/plot_torque_runs.py to generate PNG plots.\n- Uploaded plots as a workflow artifact ("torque-plots").\n\nPlease review the following checklist before merging:\n\n- [ ] Code changes (vdart_solver_mod.f90, main.f90) reviewed for correctness.\n- [ ] Data artifacts reviewed: tests/results/combined_three_comparison.txt and tests/results/combined_three_torque.csv.\n- [ ] Plots reviewed: tests/results/plots/torque_combined.png (download from artifacts).\n- [ ] Confirm builds were produced with Intel Fortran (Release|x64) and the same solver settings across runs.\n- [ ] Optional: Request additional reviewer or visual inspection of torque vs azimuth.\n\nIf you want automated plotting tweaks or additional checks (CSV validations, tolerances), reply here or update the workflow.`;
