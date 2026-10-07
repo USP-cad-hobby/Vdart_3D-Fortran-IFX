@@ -1,0 +1,46 @@
+name: PR CI - compare & plot
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  compare-and-plot:
+    name: Run comparison scripts and post PR checklist
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Python deps
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install matplotlib
+
+    - name: Run three-way comparison
+      run: |
+        python tests/compare_three.py
+
+    - name: Generate plots
+      run: |
+        python tests/plot_torque_runs.py
+
+    - name: Upload plots as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: torque-plots
+        path: tests/results/plots
+
+    - name: Post PR checklist comment
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const issue = context.issue;
+          const body = `Automated verification completed for this PR. The workflow ran these steps:\n\n- Executed tests/compare_three.py to produce combined summary and CSV.\n- Executed tests/plot_torque_runs.py to generate PNG plots.\n- Uploaded plots as a workflow artifact ("torque-plots").\n\nPlease review the following checklist before merging:\n\n- [ ] Code changes (vdart_solver_mod.f90, main.f90) reviewed for correctness.\n- [ ] Data artifacts reviewed: tests/results/combined_three_comparison.txt and tests/results/combined_three_torque.csv.\n- [ ] Plots reviewed: tests/results/plots/torque_combined.png (download from artifacts).\n- [ ] Confirm builds were produced with Intel Fortran (Release|x64) and the same solver settings across runs.\n- [ ] Optional: Request additional reviewer or visual inspection of torque vs azimuth.\n\nIf you want automated plotting tweaks or additional checks (CSV validations, tolerances), reply here or update the workflow.`;
+          await github.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, body});
