@@ -34,7 +34,6 @@ Checklist for PR review
 Notes
 
 - This PR stores small text artifacts and the helper script only. It does not include any large binaries.
-- If you prefer, I can open a draft PR on GitHub and copy this description into the PR body.
 
 Requested reviewers: @USP-cad-hobby
 
