@@ -47,6 +47,12 @@ jobs:
         name: torque-plots
         path: tests/results/plots
 
+    - name: Upload comparison CSVs as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: compare-csvs
+        path: tests/results/*.csv
+
     - name: Post PR checklist comment
       continue-on-error: true
       uses: actions/github-script@v6
