@@ -43,3 +43,17 @@ continuation_results.csv
 tests/_run/
 tests/results/plots/
 tests/results/*.txt
+state_fi0_.bin
+continuation_results.csv
+tests/_run/
+tests/results/plots/
+tests/results/.txt
+artifacts
+*.log
+state_fi0_.bin
+continuation_results.csv
+tests/_run/
+tests/results/plots/
+tests/results/.txt
+artifacts
+*.log
