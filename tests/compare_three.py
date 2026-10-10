@@ -55,6 +55,8 @@ def main():
 	for name, p in RUNS.items():
 		summaries[name] = read_summary(p / 'compare_summary.txt')
 		torques[name] = read_torque_csv(p / 'torque_vs_azimuth.csv')
+		if not summaries[name] or not torques[name]:
+			raise RuntimeError(f'Missing or empty comparison inputs for {name}: {p}')
 
 	# Write combined textual summary
 	out_txt = RESULTS_DIR / 'combined_three_comparison.txt'
