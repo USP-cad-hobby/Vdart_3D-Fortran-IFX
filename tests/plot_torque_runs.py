@@ -84,10 +84,53 @@ def read_combined_csv(path):
 					series[h].append(float(row[i]))
 				except Exception:
 					series[h].append(float('nan'))
-	# detect revolutions
-	if az and max(az) <= 1.0:
+	# detect revolutions (tolerant threshold to catch 0..1 inputs)
+	if az and max(az) <= 1.01:
 		az = [a * 360.0 for a in az]
 	return az, series
+
+
+def _normalize_and_sort_dict(az, series_dict):
+	"""Convert azimuths to degrees if needed and sort az + all series by azimuth.
+
+	Returns (az_sorted, series_sorted_dict)
+	"""
+	if not az:
+		return az, series_dict
+	# convert revolutions to degrees if max is ~1.0 or less
+	if max(az) <= 1.01:
+		az = [a * 360.0 for a in az]
+	# create sort order by azimuth
+	order = sorted(range(len(az)), key=lambda i: az[i])
+	az_sorted = [az[i] for i in order]
+	series_sorted = {}
+	for k, vals in series_dict.items():
+		# pad/truncate series to match az length safely
+		vals = list(vals)
+		if len(vals) < len(az):
+			vals = vals + [float('nan')] * (len(az) - len(vals))
+		series_sorted[k] = [vals[i] for i in order]
+	return az_sorted, series_sorted
+
+
+def _normalize_and_sort_list(az, *lists):
+	"""Convert azimuths to degrees if needed and sort az + parallel lists by azimuth.
+
+	Returns (az_sorted, [list_sorted,...])
+	"""
+	if not az:
+		return az, list(lists)
+	if max(az) <= 1.01:
+		az = [a * 360.0 for a in az]
+	order = sorted(range(len(az)), key=lambda i: az[i])
+	az_sorted = [az[i] for i in order]
+	lists_sorted = []
+	for lst in lists:
+		lst = list(lst)
+		if len(lst) < len(az):
+			lst = lst + [float('nan')] * (len(az) - len(lst))
+		lists_sorted.append([lst[i] for i in order])
+	return az_sorted, lists_sorted
 
 
 any_run = any(p.exists() for p in RUNS.values())
@@ -119,15 +162,17 @@ if any_run:
 			continue
 		az, tor = read_run_csv(path)
 		plt.plot(az, tor, label=name)
-else:
-	# try combined CSV
-	if not COMBINED.exists():
-		print('No input run files or combined CSV found; nothing to plot for combined view')
 	else:
-		az, series = read_combined_csv(COMBINED)
-		# plot each torque series
-		for key, vals in series.items():
-			plt.plot(az, vals, label=key)
+		# try combined CSV
+		if not COMBINED.exists():
+			print('No input run files or combined CSV found; nothing to plot for combined view')
+		else:
+			az, series = read_combined_csv(COMBINED)
+			# normalize/convert and sort az + series before plotting
+			az, series = _normalize_and_sort_dict(az, series)
+			# plot each torque series
+			for key, vals in series.items():
+				plt.plot(az, vals, label=key)
 
 plt.xlabel('Azimuth (deg)')
 plt.ylabel('Torque (Nm)')
