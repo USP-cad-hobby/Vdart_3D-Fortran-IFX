@@ -186,7 +186,7 @@ program vdart_demo
   write(*,*) 'Starting VDaRT time-stepping solver...'
   write(*,*) '--------------------------------------'
   ! Option: run continuation sweep over FI0_AMP (warm-start between steps)
-  RUN_CONTINUATION = .true.   ! Set to .true. to run FI0_AMP continuation test
+  RUN_CONTINUATION = .false.  ! Set to .true. to run FI0_AMP continuation test
 
   ! By default keep OMEGA constant; set USE_VAR_OMEGA to .true. to enable variable rotor rate
   USE_VAR_OMEGA = .false.
