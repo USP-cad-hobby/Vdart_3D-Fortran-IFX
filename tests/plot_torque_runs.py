@@ -162,17 +162,17 @@ if any_run:
 			continue
 		az, tor = read_run_csv(path)
 		plt.plot(az, tor, label=name)
+else:
+	# try combined CSV
+	if not COMBINED.exists():
+		print('No input run files or combined CSV found; nothing to plot for combined view')
 	else:
-		# try combined CSV
-		if not COMBINED.exists():
-			print('No input run files or combined CSV found; nothing to plot for combined view')
-		else:
-			az, series = read_combined_csv(COMBINED)
-			# normalize/convert and sort az + series before plotting
-			az, series = _normalize_and_sort_dict(az, series)
-			# plot each torque series
-			for key, vals in series.items():
-				plt.plot(az, vals, label=key)
+		az, series = read_combined_csv(COMBINED)
+		# normalize/convert and sort az + series before plotting
+		az, series = _normalize_and_sort_dict(az, series)
+		# plot each torque series
+		for key, vals in series.items():
+			plt.plot(az, vals, label=key)
 
 plt.xlabel('Azimuth (deg)')
 plt.ylabel('Torque (Nm)')
