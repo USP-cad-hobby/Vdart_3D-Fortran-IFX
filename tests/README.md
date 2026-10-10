@@ -18,8 +18,9 @@ Reproduce the baseline / offset comparison
 
 3) Run the executables in isolated folders under tests/ and generate torque CSVs and run outputs. Example (PowerShell):
 
-   mkdir -Force .\tests\baseline_run; Push-Location .\tests\baseline_run; & '..\\build\\vdart_baseline.exe' *> output_run.txt 2>&1; Pop-Location
-   mkdir -Force .\tests\offset_run; Push-Location .\tests\offset_run; & '..\\build\\vdart_offset.exe' *> output_run.txt 2>&1; Pop-Location
+   mkdir -Force .\tests\baseline_run; Push-Location .\tests\baseline_run; & '..\..\build\vdart_baseline.exe' *> output_run.txt 2>&1; Pop-Location
+   mkdir -Force .\tests\offset_run; Push-Location .\tests\offset_run; & '..\..\build\vdart_offset.exe' *> output_run.txt 2>&1; Pop-Location
+   mkdir -Force .\tests\phased_run; Push-Location .\tests\phased_run; & '..\..\build\vdart_phased_offset.exe' *> output_run.txt 2>&1; Pop-Location
 
 4) Run the comparator and side-by-side report generators:
    - tools/compare_baseline.py generates a compare_summary.txt for a single run (expects torque_vs_azimuth.dat and output_run.txt in the working folder).
