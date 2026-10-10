@@ -73,12 +73,14 @@
 		<File RelativePath=".\.gitignore"/>
 		<File RelativePath=".\docs\blade_position_verification.md"/>
 		<File RelativePath=".\tools\compare_baseline.py"/>
+		<File RelativePath=".\tests\compare_three.py"/>
 		<File RelativePath=".\docs\coordinate_transformations.md"/>
 		<File RelativePath=".\.github\copilot-instructions.md"/>
 		<File RelativePath=".\docs\FIDOT_BUG_SUMMARY.md"/>
+		<File RelativePath=".\tests\per_blade_summary.py"/>
 		<File RelativePath=".\docs\PITCH_CONTROL_VALIDATION.md"/>
-		<File RelativePath=".\README.md">
-		</File>
+		<File RelativePath=".\tests\plot_per_blade.py"/>
+		<File RelativePath=".\README.md"/>
 		<File RelativePath=".\docs\SESSION_NOTES.md"/>
 		<File RelativePath=".\docs\TEST_RESULTS_SUMMARY.md"/>
 	</Files>

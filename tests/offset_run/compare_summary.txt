@@ -1,0 +1,20 @@
+Comparison summary
+==================
+Rows parsed from torque_vs_azimuth.dat: 73
+Torque CSV written: torque_vs_azimuth.csv
+
+Torque statistics (from file)
+  mean    = 640457.14 Nm
+  min     = 2.00 Nm
+  max     = 2108180.00 Nm
+
+Mean torque reported in run output: 649352.00 Nm
+CP reported in run output: 0.16370
+
+Legacy baseline (from result.dat)
+  CP baseline      = 0.14011
+  Torque baseline  = 555757.75 Nm
+
+Comparison vs baseline:
+  Mean torque difference = 84699.39 Nm (15.24%)
+  CP difference = 0.02359 (16.84%)

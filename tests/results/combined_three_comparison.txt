@@ -1,0 +1,15 @@
+Baseline vs Offset vs Phased Combined Summary
+===========================================
+
+Baseline mean torque reported: 542314.0 Nm
+Baseline CP reported: 0.13672
+
+Offset mean torque reported: 649352.0 Nm
+Offset CP reported: 0.1637
+
+Phased mean torque reported: 635720.0 Nm
+Phased CP reported: 0.16027
+
+Offset - Baseline: 107038.00 Nm (19.74%)
+Phased - Baseline: 93406.00 Nm (17.22%)
+Phased - Offset: -13632.00 Nm (-2.10%)

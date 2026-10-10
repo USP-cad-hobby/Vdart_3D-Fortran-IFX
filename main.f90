@@ -20,6 +20,7 @@ program vdart_demo
   real(dp) :: rpm_test, pitchoff, pitchoff_test
   integer :: i, neto, ir_temp
   logical :: RUN_CONTINUATION
+  logical :: USE_BLADE_PHASED_OFFSET
 
   write(*,*) ''
   write(*,*) '========================================='
@@ -117,6 +118,10 @@ program vdart_demo
   !   - Downwind (90°<θ_rel<270°): FI0 = FI0_BASE + FI0_AMP (increase AoA)
   !   - Upwind (otherwise):        FI0 = FI0_BASE (baseline)
   !   - Use for: Compensating velocity deficit, reducing torque ripple
+  !
+  ! PITCH_MODE = 3: Fixed Offset Phased (per-blade offset)
+  !   - Alternate blades have opposite pitch offsets:  +FI0_BASE, -FI0_BASE, +FI0_BASE, ...
+  !   - Use for: Exploring effects of distributed pitch control, stability assessment
   ! ======================================================
   ! *** STEP 1 TEST: Harmonic Pitch at 1P frequency ***
   !PITCH_MODE = 1                     ! Harmonic mode
@@ -128,12 +133,12 @@ program vdart_demo
   !write(*,*) ''
   !write(*,*) '*** PITCH CONTROL TEST: HARMONIC MODE ***'
   ! *** STEP 0 TEST: Fixed 
-  PITCH_MODE = 0                      !Fixed Pitch mode (legacy validation)
+  PITCH_MODE = 3                      ! Phased per-blade fixed offset (alternate blades)
   FI0DOT = 0.0_dp                     ! No pitch frequency (fixed pitch)
   FI0_AMP =0.0_dp                     ! ±0° pitch amplitude
-  FI0_BASE = 0.0_dp                   ! No mean pitch offset
-  WIND_DIR = 0.0_dp 
-  FI0 = FI0_BASE
+  FI0_BASE = 2.0_dp * pi / 180.0_dp   ! +2° mean pitch offset (radians)
+  WIND_DIR = 0.0_dp
+  ! FI0 will be set in solver when PITCH_MODE=3
   write(*,*) ''
   !write(*,*) '*** PITCH CONTROL TEST:Static Fixed Pitch Mode ***'
   
@@ -181,7 +186,7 @@ program vdart_demo
   write(*,*) 'Starting VDaRT time-stepping solver...'
   write(*,*) '--------------------------------------'
   ! Option: run continuation sweep over FI0_AMP (warm-start between steps)
-  RUN_CONTINUATION = .true.   ! Set to .true. to run FI0_AMP continuation test
+  RUN_CONTINUATION = .false.  ! Set to .true. to run FI0_AMP continuation test
 
   ! By default keep OMEGA constant; set USE_VAR_OMEGA to .true. to enable variable rotor rate
   USE_VAR_OMEGA = .false.
