@@ -62,6 +62,11 @@ tests/run/
 tests/results/plots/
 state_fi0.bin
 continuation_results.csv
+# Local CI artifact folders and downloaded artifacts
+.gh-artifacts-*
+artifacts*
+# Local conversation/log dumps
+conversations/
 artifacts*
 tests/run/
 tests/results/plots/
