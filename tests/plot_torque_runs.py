@@ -133,6 +133,32 @@ def _normalize_and_sort_list(az, *lists):
 	return az_sorted, lists_sorted
 
 
+def _insert_nans_on_gaps(az, vals, gap_deg=180.0):
+	"""Insert NaNs into parallel az and vals lists where azimuth gaps exceed gap_deg.
+
+	This prevents matplotlib from drawing long connector lines across large azimuth
+	jumps (for example between 1 and 1445 degrees). Returns (az_out, vals_out).
+	"""
+	if not az:
+		return az, vals
+	az_out = []
+	vals_out = []
+	prev = az[0]
+	az_out.append(prev)
+	vals_out.append(vals[0] if vals else float('nan'))
+	for i in range(1, len(az)):
+		a = az[i]
+		v = vals[i] if i < len(vals) else float('nan')
+		if abs(a - prev) > gap_deg:
+			# insert a NaN to break the line
+			az_out.append(float('nan'))
+			vals_out.append(float('nan'))
+		az_out.append(a)
+		vals_out.append(v)
+		prev = a
+	return az_out, vals_out
+
+
 any_run = any(p.exists() for p in RUNS.values())
 
 # Per-run plots
@@ -141,6 +167,8 @@ for name, path in RUNS.items():
 		print(f"Skipping {name}: {path} not found")
 		continue
 	az, tor = read_run_csv(path)
+	az, [tor] = _normalize_and_sort_list(az, tor)
+	az, tor = _insert_nans_on_gaps(az, tor, gap_deg=180.0)
 	plt.figure(figsize=(8, 4))
 	plt.plot(az, tor, label=name)
 	plt.xlabel('Azimuth (deg)')
@@ -161,6 +189,8 @@ if any_run:
 		if not path.exists():
 			continue
 		az, tor = read_run_csv(path)
+		az, [tor] = _normalize_and_sort_list(az, tor)
+		az, tor = _insert_nans_on_gaps(az, tor, gap_deg=180.0)
 		plt.plot(az, tor, label=name)
 else:
 	# try combined CSV
@@ -172,7 +202,8 @@ else:
 		az, series = _normalize_and_sort_dict(az, series)
 		# plot each torque series
 		for key, vals in series.items():
-			plt.plot(az, vals, label=key)
+			az_plot, vals_plot = _insert_nans_on_gaps(az, vals, gap_deg=180.0)
+			plt.plot(az_plot, vals_plot, label=key)
 
 plt.xlabel('Azimuth (deg)')
 plt.ylabel('Torque (Nm)')
